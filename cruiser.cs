@@ -43,6 +43,7 @@ namespace kirby
 		public static ConfigEntry<bool> temp9_1up;
 		public static ConfigEntry<bool> tempk_lever;
 		public static ConfigEntry<int>  tempi_headlights;
+		public static ConfigEntry<bool> tempr_input;
 
 		public static cfg_bool cfg1_magnet = new cfg_bool();      //true
 		public static cfg_int  cfg2_moveitems = new cfg_int();    //2
@@ -64,6 +65,7 @@ namespace kirby
 		public static cfg_bool cfg9_1up = new cfg_bool();         //false
 		public static cfg_bool cfgk_lever = new cfg_bool();       //true
 		public static cfg_int  cfgi_headlights = new cfg_int();   //2
+		public static cfg_bool cfgr_input = new cfg_bool();       //false
 
 		private void Awake()
 		{
@@ -87,6 +89,7 @@ namespace kirby
 			temp9_1up = Config.Bind("Cruiser+", "1up", false, "[Cruiser 1up]\nallows purchasing another cruiser in the same day if the current cruiser is destroyed"); cfg9_1up.Value = temp9_1up.Value;
 			tempk_lever = Config.Bind("Cruiser+", "lever", true, "[Magnet lever]\nadds a lever to the cruiser for turning on/off the ship magnet"); cfgk_lever.Value = tempk_lever.Value;
 			tempi_headlights = Config.Bind("Cruiser+", "headlights", 2, "[Headlights]\nwhether the headlights are on or off when the cruiser is spawned.\n1 = headlights on, headlights material off (same as vanilla)\n2 = headlights on, headlights material on\n3 = headlights off, headlights material off"); cfgi_headlights.Value = tempi_headlights.Value;
+			tempr_input = Config.Bind("Cruiser+", "disable_input", false, "[Disable input while typing]\nwhether driving the cruiser (wasd/space) is disabled while typing in chat"); cfgr_input.Value = tempr_input.Value;
 
 			mls = BepInEx.Logging.Logger.CreateLogSource("Cruiser+");
 			mls.LogInfo(":red_car:");
@@ -1304,6 +1307,18 @@ namespace kirby
 			return (bool)Object.FindObjectsOfType<VehicleController>().FirstOrDefault(_ => (_ != null && _.carDestroyed == false));
 		}
 
+//		// input //
+		[HarmonyPatch(typeof(VehicleController), "DoTurboBoost"), HarmonyPrefix]
+		private static bool pre7()
+		{
+			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
+		}
+		[HarmonyPatch(typeof(VehicleController), "GetVehicleInput"), HarmonyPrefix]
+		private static bool pre8()
+		{
+			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
+		}
+
 //		// network syncing //
 		private static bool sync = false;
 
@@ -1445,9 +1460,13 @@ namespace kirby
 			return false;
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPrefix]
-		private static void pre8()
+		private static void pre9()
 		{
 			disconnected[0] = true;
+			if (StartOfRound.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+			{
+				try { NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Host"); NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Client"); } catch (System.Exception error) { ca.mls.LogError(error); }
+			}
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
 		private static void pst9()
@@ -1463,11 +1482,6 @@ namespace kirby
 			loaded_engine = new List<string>();
 			synced_percents = new int[] {-1, -1, -1};
 			client_received = false;
-			if (StartOfRound.Instance != null)
-			{
-				NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Host");
-				NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Client");
-			}
 		}
 
 //		// saving/loading //
