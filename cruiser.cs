@@ -81,7 +81,7 @@ namespace kirby
 			temp5_cruiseralt = Config.Bind("Cruiser+", "cruiser_alt_percentage", 40, "[Cruiser alt item percentage]\npercentage that the cruiser item will be an alternate version.\ninput = percentage, 40 is 40%"); cfg5_cruiseralt.Value = temp5_cruiseralt.Value;
 			temp5_playwithtoy = Config.Bind("Cruiser+", "cruiser_item_interaction", true, "[Cruiser item interaction]\nadds interacting with the cruiser items by clicking while holding them to play an event.\nevents are a mix of audio and visual effects, there are about 49 events, some events have follow-up effects that are related to or continue the previous effect.\nhost must have this config and the scrap config enabled for the events to be synced between players. if host has either config disabled or doesn't have this mod then the events will play locally instead"); cfg5_playwithtoy.Value = temp5_playwithtoy.Value;
 			temp5_saveseeds = Config.Bind("Cruiser+", "save/load", true, "[Save/load seeds]\nwhether the engine/cruiser item types should be saved to the save file. this saves the seed that determines the items type, so it will be the same when rejoining.\nloading a save file that has saved seeds without having the scrap config enabled or without having this enabled or while in lan isn't recommended as the saved seeds can be reset if the number of items is changed.\nsaved item types are synced with other players if the synced percentages config is enabled.\nscrap config must be enabled for this to be enabled"); cfg5_saveseeds.Value = temp5_saveseeds.Value;
-			temp5_millisecond = Config.Bind("Cruiser+", "timer", 100, "[Client wait_timer]\nwhen joining a lobby as non-host engine items will wait to set their item type until the network message sent by the host have been received or the time spent waiting reached the maximum amount set by this config.\nthere will be a log message specifying if the network message was received first or the timer ended first. if the timer is often ending before the message from the host is being received then this should be increased.\nmin is 20, max is 4000. 100 is before the player spawn animation ends, 500 is about 10 seconds, 1000 is about 15 seconds"); cfg5_millisecond.Value = temp5_millisecond.Value;
+			temp5_millisecond = Config.Bind("Cruiser+", "timer", 100, "[Client wait_timer]\nwhen joining a lobby as non-host engine items will wait to set their item type until the network message sent by the host has been received or the time spent waiting reached the maximum amount set by this config.\nthere will be a log message specifying if the network message was received first or the timer ended first. if the timer is often ending before the message from the host is being received then this should be increased.\nmin is 20, max is 4000. 100 is before the player spawn animation ends, 500 is about 10 seconds, 1000 is about 15 seconds"); cfg5_millisecond.Value = temp5_millisecond.Value;
 			temp5_percentages = Config.Bind("Cruiser+", "sync", true, "[Synced percentages]\nautomatically sync config cruiser item percentages with the host. only disable if you're aware that disabling this can cause the cruiser item types to not be the same as other players if playing with others that have this mod"); cfg5_percentages.Value = temp5_percentages.Value;
 			temp6_speedometer = Config.Bind("Cruiser+", "speedometer", true, "[Speedometer]\nadds a speedometer"); cfg6_speedometer.Value = temp6_speedometer.Value;
 			temp7_unlockables = Config.Bind("Cruiser+", "fix", true, "[Cruiser position/rotation after joining]\nwhen joining a lobby with a cruiser, it will be on the magnet instead of on the opposite side of the ship.\nalso fixes the 'rotation quaternions must be unit length' error from the cruiser after joining"); cfg7_unlockables.Value = temp7_unlockables.Value;
@@ -689,6 +689,9 @@ namespace kirby
 		{
 			if (ca.cfg5_scrap.Value == true && __instance.itemProperties.name == "EnginePart1")
 			{
+				await wait_frames(1);
+				if (__instance.gameObject.GetComponent<kirby.temporary>() != null) return;
+				__instance.gameObject.AddComponent<kirby.temporary>();
 				if (first_item[0] == true)
 				{
 					Item r = StartOfRound.Instance.allItemsList.itemsList.First(_ => _.name == "EnginePart1");
@@ -855,8 +858,7 @@ namespace kirby
 						BoxCollider box = __instance.GetComponent<BoxCollider>();
 						if (cr.next32mm(0, 100) < percents[2]) //kuro
 						{
-							tr = Object.Instantiate<Transform>(tree[0]);
-							tr.SetParent(__instance.transform);
+							tr = Object.Instantiate<Transform>(tree[0], __instance.transform);
 							tr.localPosition = new Vector3(21.5f, 0f, 0f);
 							tr.localEulerAngles = new Vector3(0f, 90f, 180f);
 							tr.localScale = new Vector3(-6f, -6f, -6f);
@@ -867,8 +869,7 @@ namespace kirby
 						}
 						else
 						{
-							tr = Object.Instantiate<Transform>(tree[1]);
-							tr.SetParent(__instance.transform);
+							tr = Object.Instantiate<Transform>(tree[1], __instance.transform);
 							tr.localPosition = new Vector3(3.5f, 0f, 0f);
 							tr.localEulerAngles = new Vector3(0f, 180f, 90f);
 							tr.localScale = new Vector3(-6f, -6f, -6f);
@@ -1020,15 +1021,6 @@ namespace kirby
 				}
 			}
 		}
-		[HarmonyPatch(typeof(HUDManager), "DisplayNewScrapFound"), HarmonyPrefix]
-		private static void pre6(ref List<GrabbableObject> ___itemsToBeDisplayed)
-		{
-			if (item[0] != null && ___itemsToBeDisplayed[0] != null && ___itemsToBeDisplayed[0].itemProperties.name == "EnginePart1" && ___itemsToBeDisplayed[0].GetComponentInChildren<ScanNodeProperties>() != null)
-			{
-				___itemsToBeDisplayed[0].itemProperties.itemName = ___itemsToBeDisplayed[0].GetComponentInChildren<ScanNodeProperties>().headerText;
-				___itemsToBeDisplayed[0].itemProperties.spawnPrefab.GetComponentInChildren<ScanNodeProperties>().headerText = (___itemsToBeDisplayed[0].GetComponentsInChildren<Transform>(true).Length >= 3 && ___itemsToBeDisplayed[0].GetComponentsInChildren<Transform>(true)[2] != null && (___itemsToBeDisplayed[0].GetComponentsInChildren<Transform>(true)[2].name == "ToyCar(Clone)" || ___itemsToBeDisplayed[0].GetComponentsInChildren<Transform>(true)[2].name == "ToyCar(Exploded)(Clone)") ? ___itemsToBeDisplayed[0].GetComponentsInChildren<Transform>(true)[2].name : ___itemsToBeDisplayed[0].GetComponentInChildren<ScanNodeProperties>().headerText);
-			}
-		}
 		[HarmonyPatch(typeof(HUDManager), "DisplayNewScrapFound"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn5(IEnumerable<CodeInstruction> Instrs)
 		{
@@ -1037,6 +1029,7 @@ namespace kirby
 			{
 				if (n < (l.Count - 1) && l[n + 1].ToString() == "callvirt UnityEngine.Renderer[] UnityEngine.GameObject::GetComponentsInChildren()")
 				{
+					yield return new CodeInstruction(OpCodes.Ldarg_0);
 					yield return new CodeInstruction(OpCodes.Ldloc_0);
 					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("display_cruiser"));
 				}
@@ -1044,33 +1037,34 @@ namespace kirby
 				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
-		public static void display_cruiser(GameObject displayingObject)
+		public static void display_cruiser(HUDManager instance, GameObject displayingObject)
 		{
-			if (item[0] != null && displayingObject.name == "EnginePart(Clone)" && displayingObject.GetComponentInChildren<ScanNodeProperties>() != null)
+			if (item[0] != null && instance.itemsToBeDisplayed[0] != null && instance.itemsToBeDisplayed[0].itemProperties.name == "EnginePart1" && displayingObject.name == "EnginePart(Clone)" && instance.itemsToBeDisplayed[0].GetComponentInChildren<ScanNodeProperties>() != null)
 			{
-				if (displayingObject.GetComponentInChildren<ScanNodeProperties>().headerText == item[1])
+				int n = (instance.itemsToBeDisplayed[0].GetComponentInChildren<ScanNodeProperties>().headerText == item[1] ? 1 : 0);
+				instance.itemsToBeDisplayed[0].itemProperties.itemName = item[n];
+				if (n == 1)
 				{
 					displayingObject.GetComponent<MeshFilter>().mesh = null;
-				}
-				else if (displayingObject.GetComponentInChildren<ScanNodeProperties>().headerText == "ToyCar(Clone)")
-				{
-					Object.Instantiate<Transform>(tree[1]).SetParent(displayingObject.transform);
-					Transform tr = displayingObject.GetComponentsInChildren<Transform>(true)[2];
-					tr.localPosition = new Vector3(3.5f, 0f, 0f);
-					tr.localEulerAngles = new Vector3(0f, 180f, 90f);
-					tr.localScale = new Vector3(-6f, -6f, -6f);
-					tr.gameObject.SetActive(true);
-					displayingObject.GetComponent<MeshFilter>().mesh = null;
-				}
-				else if (displayingObject.GetComponentInChildren<ScanNodeProperties>().headerText == "ToyCar(Exploded)(Clone)")
-				{
-					Object.Instantiate<Transform>(tree[0]).SetParent(displayingObject.transform);
-					Transform tr = displayingObject.GetComponentsInChildren<Transform>(true)[2];
-					tr.localPosition = new Vector3(21.5f, 0f, 0f);
-					tr.localEulerAngles = new Vector3(0f, 90f, 180f);
-					tr.localScale = new Vector3(-6f, -6f, -6f);
-					tr.gameObject.SetActive(true);
-					displayingObject.GetComponent<MeshFilter>().mesh = null;
+					if (instance.itemsToBeDisplayed[0].transform.childCount >= 2)
+					{
+						if (instance.itemsToBeDisplayed[0].transform.GetChild(1).name == "ToyCar(Clone)")
+						{
+							Transform tr = Object.Instantiate<Transform>(tree[1], displayingObject.transform);
+							tr.localPosition = new Vector3(3.5f, 0f, 0f);
+							tr.localEulerAngles = new Vector3(0f, 180f, 90f);
+							tr.localScale = new Vector3(-6f, -6f, -6f);
+							tr.gameObject.SetActive(true);
+						}
+						else if (instance.itemsToBeDisplayed[0].transform.GetChild(1).name == "ToyCar(Exploded)(Clone)")
+						{
+							Transform tr = Object.Instantiate<Transform>(tree[0], displayingObject.transform);
+							tr.localPosition = new Vector3(21.5f, 0f, 0f);
+							tr.localEulerAngles = new Vector3(0f, 90f, 180f);
+							tr.localScale = new Vector3(-6f, -6f, -6f);
+							tr.gameObject.SetActive(true);
+						}
+					}
 				}
 			}
 		}
@@ -1309,12 +1303,12 @@ namespace kirby
 
 //		// input //
 		[HarmonyPatch(typeof(VehicleController), "DoTurboBoost"), HarmonyPrefix]
-		private static bool pre7()
+		private static bool pre6()
 		{
 			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
 		}
 		[HarmonyPatch(typeof(VehicleController), "GetVehicleInput"), HarmonyPrefix]
-		private static bool pre8()
+		private static bool pre7()
 		{
 			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
 		}
@@ -1460,7 +1454,7 @@ namespace kirby
 			return false;
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPrefix]
-		private static void pre9()
+		private static void pre8()
 		{
 			disconnected[0] = true;
 			if (StartOfRound.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
@@ -2959,6 +2953,7 @@ namespace kirby
 	}
 
 //	// custom component //
+	public class temporary : MonoBehaviour {}
 	public class ItemTypeSeed : MonoBehaviour
 	{
 		public string guid = ca.harmony.Id;
