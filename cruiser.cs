@@ -12,6 +12,7 @@ using HarmonyLib;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.InputSystem;
 using Unity.Netcode;
 
 namespace kirby
@@ -44,6 +45,7 @@ namespace kirby
 		public static ConfigEntry<bool> tempk_lever;
 		public static ConfigEntry<int>  tempi_headlights;
 		public static ConfigEntry<bool> tempr_input;
+		public static ConfigEntry<Key>  tempb_keybind;
 
 		public static cfg_bool cfg1_magnet = new cfg_bool();      //true
 		public static cfg_int  cfg2_moveitems = new cfg_int();    //2
@@ -66,6 +68,7 @@ namespace kirby
 		public static cfg_bool cfgk_lever = new cfg_bool();       //true
 		public static cfg_int  cfgi_headlights = new cfg_int();   //2
 		public static cfg_bool cfgr_input = new cfg_bool();       //false
+		public static cfg_key  cfgb_keybind = new cfg_key();      //None
 
 		private void Awake()
 		{
@@ -90,6 +93,7 @@ namespace kirby
 			tempk_lever = Config.Bind("Cruiser+", "lever", true, "[Magnet lever]\nadds a lever to the cruiser for turning on/off the ship magnet"); cfgk_lever.Value = tempk_lever.Value;
 			tempi_headlights = Config.Bind("Cruiser+", "headlights", 2, "[Headlights]\nwhether the headlights are on or off when the cruiser is spawned.\n1 = headlights on, headlights material off (same as vanilla)\n2 = headlights on, headlights material on\n3 = headlights off, headlights material off"); cfgi_headlights.Value = tempi_headlights.Value;
 			tempr_input = Config.Bind("Cruiser+", "disable_input", false, "[Disable input while typing]\nwhether driving the cruiser (wasd/space) is disabled while typing in chat"); cfgr_input.Value = tempr_input.Value;
+			tempb_keybind = Config.Bind("Cruiser+", "keybind", Key.None, "[Separate jump/boost keybinds]\nmakes the boost keybind [Space] plus [config value]. setting to None (or an invalid key) will disable this config and be the same as vanilla. for example if set to LeftShift will make the boost keybind Space+LeftShift, so only pressing Space will jump the cruiser instead.\nhttps://docs.unity3d.com/Packages/com.unity.inputsystem@1.0/api/UnityEngine.InputSystem.Key.html"); cfgb_keybind.Value = tempb_keybind.Value;
 
 			mls = BepInEx.Logging.Logger.CreateLogSource("Cruiser+");
 			mls.LogInfo(":red_car:");
@@ -97,6 +101,7 @@ namespace kirby
 
 			}}public class cfg_bool{public bool Value{get;set;
 			}}public class cfg_int{public int Value{get;set;
+			}}public class cfg_key{public Key Value{get;set;
 		}
 	}
 	public class cruiser_additions
@@ -154,9 +159,9 @@ namespace kirby
 					for (int n = 0; n < objects.Length; n = n + 1)
 					{
 						GrabbableObject item = objects[n].GetComponent<GrabbableObject>();
-						if (item != null && (hostscraponly == "false" || (hostscraponly == "true" && item.itemProperties.isScrap == true) || (hostscraponly == "nil" && ca.cfg2_scraponly.Value == false) || (hostscraponly == "nil" && ca.cfg2_scraponly.Value == true && item.itemProperties.isScrap == true)) && item.isHeld == false && item.isHeldByEnemy == false && item.isInShipRoom == true) //objects[n].transform.parent == car.transform)
+						if ((item) && item != null && (hostscraponly == "false" || (hostscraponly == "true" && item.itemProperties.isScrap == true) || (hostscraponly == "nil" && ca.cfg2_scraponly.Value == false) || (hostscraponly == "nil" && ca.cfg2_scraponly.Value == true && item.itemProperties.isScrap == true)) && item.isHeld == false && item.isHeldByEnemy == false && item.isInShipRoom == true) //objects[n].transform.parent == car.transform)
 						{
-							ca.mls.LogInfo("moving item " + (n + 1) + " " + item.itemProperties.itemName + " / " + item.itemProperties.name + " / " + item.name);
+							ca.mls.LogInfo("moving item " + (n + 1) + " " + item.itemProperties.itemName + " / " + item.itemProperties.name + " / " + ((item.gameObject) && item.gameObject != null ? item.name : ".gameObject was null"));
 							item.transform.SetParent(StartOfRound.Instance.elevatorTransform);
 							Shion cr = (GameNetworkManager.Instance.disableSteam == false && lobbyid != 0uL && item.GetComponent<NetworkObject>() != null ? new Shion(lobbyid + item.GetComponent<NetworkObject>().NetworkObjectId) : new Shion());
 							var angle = cr.next01() * System.Math.PI * 2;
@@ -495,6 +500,7 @@ namespace kirby
 					lever.localEulerAngles = new Vector3(90f, 90f, 0f);
 					lever.localScale = new Vector3(0.6f, 0.6f, 0.6f);
 					lever.gameObject.SetActive(true);
+					lever.GetComponent<Animator>().SetBool("leverUp", StartOfRound.Instance.magnetOn);
 					ca.mls.LogInfo("added magnet lever");
 				}
 			}
@@ -1312,6 +1318,40 @@ namespace kirby
 		{
 			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
 		}
+		[HarmonyPatch(typeof(VehicleController), "SetCarEffects"), HarmonyPrefix]
+		private static void pre8(VehicleController __instance, ref float setSteering, ref float ___steeringWheelAnimFloat)
+		{
+			if (__instance.localPlayerInControl)
+			{
+				setSteering = 0f;
+				___steeringWheelAnimFloat = __instance.steeringInput / 6f;
+			}
+		}
+		[HarmonyPatch(typeof(VehicleController), "UseTurboBoostLocalClient"), HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> trn8(IEnumerable<CodeInstruction> Instrs)
+		{
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
+			{
+				if (ca.cfgb_keybind.Value != Key.None && l[n].ToString() == "ldfld bool VehicleController::ignitionStarted")
+				{
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("return_ignition_plus_keybind"));
+				}
+				else
+				{
+					yield return l[n];
+				}
+				//ca.mls.LogInfo(l[n].ToString());
+			}
+		}
+		public static bool return_ignition_plus_keybind(VehicleController self)
+		{
+			if (self.ignitionStarted == true && (ca.cfgb_keybind.Value == Key.None || Keyboard.current[ca.cfgb_keybind.Value].isPressed == true))
+			{
+				return true;
+			}
+			return false;
+		}
 
 //		// network syncing //
 		private static bool sync = false;
@@ -1454,7 +1494,7 @@ namespace kirby
 			return false;
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPrefix]
-		private static void pre8()
+		private static void pre9()
 		{
 			disconnected[0] = true;
 			if (StartOfRound.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
@@ -1484,7 +1524,7 @@ namespace kirby
 		private static List<string> loaded_engine = new List<string>();
 
 		[HarmonyPatch(typeof(GameNetworkManager), "SaveItemsInShip"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn8(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn9(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1540,7 +1580,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(StartOfRound), "LoadShipGrabbableItems"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn9(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn10(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -2953,7 +2993,39 @@ namespace kirby
 	}
 
 //	// custom component //
-	public class temporary : MonoBehaviour {}
+	public class temporary : MonoBehaviour
+	{
+		public string guid = ca.harmony.Id;
+		public float cd = 2f;
+
+		public void Awake()
+		{
+			cd = cd + (float)(new Shion().next01() * 2);
+		}
+		public void Update()
+		{
+			if (cd > 0f)
+			{
+				cd = cd - Time.deltaTime;
+			}
+			else
+			{
+				cd = 2f;
+				GrabbableObject go = this.GetComponent<GrabbableObject>();
+				if (go != null && go.isPocketed == false)
+				{
+					foreach (Renderer rend in this.GetComponentsInChildren<Renderer>(true))
+					{
+						if (rend != null)
+						{
+							rend.enabled = true;
+							rend.forceRenderingOff = false;
+						}
+					}
+				}
+			}
+		}
+	}
 	public class ItemTypeSeed : MonoBehaviour
 	{
 		public string guid = ca.harmony.Id;
