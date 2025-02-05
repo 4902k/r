@@ -517,9 +517,13 @@ namespace kirby
 			v.mainBodyMesh.sharedMaterials = cats;
 			await wait_frames(1);
 			v.headlightsContainer.SetActive(ca.cfgi_headlights.Value == 2 ? true : false);
+			cats = v.mainBodyMesh.sharedMaterials;
+			cats[1] = cat;
 			v.mainBodyMesh.sharedMaterials = cats;
 			await wait_frames(4);
 			v.headlightsContainer.SetActive(ca.cfgi_headlights.Value == 2 ? true : false);
+			cats = v.mainBodyMesh.sharedMaterials;
+			cats[1] = cat;
 			v.mainBodyMesh.sharedMaterials = cats;
 		}
 		[HarmonyPatch(typeof(VehicleController), "SetFrontCabinLightOn"), HarmonyPostfix]
