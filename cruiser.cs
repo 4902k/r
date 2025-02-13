@@ -510,17 +510,20 @@ namespace kirby
 		}
 		private static async void set_headlights(VehicleController v)
 		{
+			if (disconnected[0] == true) return;
 			v.headlightsContainer.SetActive(ca.cfgi_headlights.Value == 2 ? true : false);
 			Material cat = (ca.cfgi_headlights.Value == 2 ? v.headlightsOnMat : v.headlightsOffMat);
 			Material[] cats = v.mainBodyMesh.sharedMaterials;
 			cats[1] = cat;
 			v.mainBodyMesh.sharedMaterials = cats;
 			await wait_frames(1);
+			if (disconnected[0] == true) return;
 			v.headlightsContainer.SetActive(ca.cfgi_headlights.Value == 2 ? true : false);
 			cats = v.mainBodyMesh.sharedMaterials;
 			cats[1] = cat;
 			v.mainBodyMesh.sharedMaterials = cats;
 			await wait_frames(4);
+			if (disconnected[0] == true) return;
 			v.headlightsContainer.SetActive(ca.cfgi_headlights.Value == 2 ? true : false);
 			cats = v.mainBodyMesh.sharedMaterials;
 			cats[1] = cat;
@@ -1082,10 +1085,10 @@ namespace kirby
 		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPostfix]
 		private static void pst6()
 		{
+			disconnected = new bool[] {false, false};
+			reset_network_variables("StartOfRound.Awake");
 			if (GameNetworkManager.Instance.disableSteam == false)
 			{
-				disconnected = new bool[] {false, false};
-				synced_percents = new int[] {-1, -1, -1};
 				if (GameNetworkManager.Instance.currentLobby.HasValue == true)
 				{
 					lobbyid = (GameNetworkManager.Instance.currentLobby.Value.Id % 1000000000);
@@ -1194,7 +1197,7 @@ namespace kirby
 				if (play.cooldown <= 0f)
 				{
 					UInt64 guid = __instance.GetComponent<NetworkObject>().NetworkObjectId;
-					if (StartOfRound.Instance.connectedPlayersAmount + 1 != 1 && sync == true)
+					if (GameNetworkManager.Instance.disableSteam == false && StartOfRound.Instance.connectedPlayersAmount + 1 != 1 && sync == true)
 					{
 						if (GameNetworkManager.Instance.isHostingGame == true)
 						{
@@ -1501,13 +1504,22 @@ namespace kirby
 		private static void pre9()
 		{
 			disconnected[0] = true;
-			if (StartOfRound.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+		}
+		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
+		private static void pst9()
+		{
+			reset_network_variables("GameNetworkManager.Disconnect");
+		}
+		[HarmonyPatch(typeof(StartOfRound), "OnDisable"), HarmonyPrefix]
+		private static void pre10()
+		{
+			reset_network_variables("StartOfRound.OnDisable");
+			if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
 			{
 				try { NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Host"); NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Client"); } catch (System.Exception error) { ca.mls.LogError(error); }
 			}
 		}
-		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
-		private static void pst9()
+		private static void reset_network_variables(string s)
 		{
 			sync = false;
 			hostmoveitems = "nil";
@@ -1520,6 +1532,7 @@ namespace kirby
 			loaded_engine = new List<string>();
 			synced_percents = new int[] {-1, -1, -1};
 			client_received = false;
+			ca.mls.LogInfo("reset network variables (" + s + ")");
 		}
 
 //		// saving/loading //
