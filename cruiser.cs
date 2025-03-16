@@ -97,7 +97,7 @@ namespace kirby
 
 			mls = BepInEx.Logging.Logger.CreateLogSource("Cruiser+");
 			mls.LogInfo(":red_car:");
-			harmony.PatchAll(typeof(cruiser_additions));
+			harmony.PatchAll(typeof(kirby.cruiser_additions));
 
 			}}public class cfg_bool{public bool Value{get;set;
 			}}public class cfg_int{public int Value{get;set;
@@ -529,16 +529,76 @@ namespace kirby
 			cats[1] = cat;
 			v.mainBodyMesh.sharedMaterials = cats;
 		}
-		[HarmonyPatch(typeof(VehicleController), "SetFrontCabinLightOn"), HarmonyPostfix]
-		private static void pst1(VehicleController __instance, ref bool setOn)
+		[HarmonyPatch(typeof(VehicleController), "CancelTryIgnitionClientRpc"), HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> trn3(IEnumerable<CodeInstruction> Instrs)
+		{
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
+			{
+				yield return l[n];
+				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				{
+					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+				}
+				//ca.mls.LogInfo(l[n].ToString());
+			}
+		}
+		[HarmonyPatch(typeof(VehicleController), "TryIgnition", MethodType.Enumerator), HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> trn4(IEnumerable<CodeInstruction> Instrs)
+		{
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
+			{
+				yield return l[n];
+				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				{
+					yield return new CodeInstruction(OpCodes.Ldloc_1);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+				}
+				//ca.mls.LogInfo(l[n].ToString());
+			}
+		}
+		[HarmonyPatch(typeof(VehicleController), "SetIgnition"), HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> trn5(IEnumerable<CodeInstruction> Instrs)
+		{
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
+			{
+				yield return l[n];
+				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				{
+					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+				}
+				//ca.mls.LogInfo(l[n].ToString());
+			}
+		}
+		[HarmonyPatch(typeof(VehicleController), "RemoveKey", MethodType.Enumerator), HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> trn6(IEnumerable<CodeInstruction> Instrs)
+		{
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
+			{
+				yield return l[n];
+				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				{
+					yield return new CodeInstruction(OpCodes.Ldloc_1);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+				}
+				//ca.mls.LogInfo(l[n].ToString());
+			}
+		}
+		public static void set_lights(VehicleController __instance)
 		{
 			if (__instance.averageCount < 4) return;
+			bool set_on = (bool)typeof(VehicleController).GetField("keyIsInIgnition", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
 			if (ca.cfg4_light.Value == true && light_tree != null)
 			{
-				__instance.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_storage_light(Clone)").gameObject.SetActive(setOn);
+				__instance.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_storage_light(Clone)").gameObject.SetActive(set_on);
 				if (ca.cfg4_night.Value == true && nightlight != null)
 				{
-					__instance.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_night_light").gameObject.SetActive(!setOn);
+					__instance.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_night_light").gameObject.SetActive(!set_on);
 				}
 			}
 			if (ca.cfg6_speedometer.Value == true && meter_cube != null && meter_text != null)
@@ -550,12 +610,12 @@ namespace kirby
 					{
 						rt.GetChild(0).GetComponent<TMPro.TextMeshProUGUI>().text = "0";
 					}
-					rt.gameObject.SetActive(setOn);
+					rt.gameObject.SetActive(set_on);
 				}
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "DestroyCar"), HarmonyPostfix]
-		private static void pst2(VehicleController __instance)
+		private static void pst1(VehicleController __instance)
 		{
 			if (ca.cfg4_light.Value == true && light_tree != null)
 			{
@@ -572,7 +632,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "FixedUpdate"), HarmonyPostfix]
-		private static void pst3(VehicleController __instance)
+		private static void pst2(VehicleController __instance)
 		{
 			if (ca.cfg6_speedometer.Value == true && meter_cube != null && meter_text != null && __instance.ignitionStarted == true && __instance.averageCount >= 4)
 			{
@@ -593,11 +653,11 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(StartOfRound), "SetMagnetOnClientRpc"), HarmonyPostfix]
-		private static void pst4(StartOfRound __instance, bool on)
+		private static void pst3(StartOfRound __instance, bool on)
 		{
 			if (ca.cfgk_lever.Value == true && lever_tree != null)
 			{
-				foreach (VehicleController vehicle in Object.FindObjectsOfType<VehicleController>())
+				foreach (VehicleController vehicle in Object.FindObjectsByType<VehicleController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
 				{
 					Transform lever = vehicle.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_magnet_lever(Clone)");
 					if (lever == null) continue;
@@ -652,7 +712,7 @@ namespace kirby
 		{
 			if (ca.cfg4_light.Value == true && ca.cfg4_night.Value == true && nightlight != null)
 			{
-				VehicleController car = Object.FindObjectsOfType<VehicleController>().FirstOrDefault(_ => _.GetComponent<NetworkObject>() != null && _.GetComponent<NetworkObject>().NetworkObjectId == guid);
+				VehicleController car = Object.FindObjectsByType<VehicleController>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(_ => _.GetComponent<NetworkObject>() != null && _.GetComponent<NetworkObject>().NetworkObjectId == guid);
 				if (car != null)
 				{
 					Transform light = car.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_storage_light(Clone)");
@@ -694,23 +754,19 @@ namespace kirby
 		private static bool[] first_item = new bool[] {true, true, true};
 
 		[HarmonyPatch(typeof(GrabbableObject), "Start"), HarmonyPostfix]
-		private static void pst5(GrabbableObject __instance)
+		private static void pst4(GrabbableObject __instance)
 		{
-			pst5async(__instance);
+			pst4async(__instance);
 		}
-		private static async void pst5async(GrabbableObject __instance)
+		private static async void pst4async(GrabbableObject __instance)
 		{
 			if (ca.cfg5_scrap.Value == true && __instance.itemProperties.name == "EnginePart1")
 			{
 				await wait_frames(1);
 				if (__instance.gameObject.GetComponent<kirby.temporary>() != null) return;
 				__instance.gameObject.AddComponent<kirby.temporary>();
-				if (first_item[0] == true)
-				{
-					Item r = StartOfRound.Instance.allItemsList.itemsList.First(_ => _.name == "EnginePart1");
-					r.restingRotation = new Vector3(0f, 0f, 90f);
-					r.verticalOffset = 0.4f;
-				}
+				__instance.itemProperties.restingRotation = new Vector3(0f, 0f, 90f);
+				__instance.itemProperties.verticalOffset = 0.4f;
 				if (GameNetworkManager.Instance.disableSteam == false && seeds == "nil")
 				{
 					if (GameNetworkManager.Instance.isHostingGame == false)
@@ -959,7 +1015,7 @@ namespace kirby
 		}
 
 		[HarmonyPatch(typeof(PlayerControllerB), "BeginGrabObject"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn3(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn7(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1000,7 +1056,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(PlayerControllerB), "SwitchToItemSlot"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn4(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn8(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1035,7 +1091,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(HUDManager), "DisplayNewScrapFound"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn5(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn9(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1081,12 +1137,16 @@ namespace kirby
 				}
 			}
 		}
-		public static int discoball = 1;
-		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPostfix]
-		private static void pst6()
+		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPrefix]
+		private static void pre6()
 		{
 			disconnected = new bool[] {false, false};
 			reset_network_variables("StartOfRound.Awake");
+		}
+		public static int discoball = 1;
+		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPostfix]
+		private static void pst5()
+		{
 			if (GameNetworkManager.Instance.disableSteam == false)
 			{
 				if (GameNetworkManager.Instance.currentLobby.HasValue == true)
@@ -1183,7 +1243,7 @@ namespace kirby
 		//chain_timer_override
 		//shion
 		//rarity
-		[HarmonyPatch(typeof(GrabbableObject), "ItemActivate"), HarmonyPostfix]
+		[HarmonyPatch(typeof(GrabbableObject), "ItemActivate"), HarmonyPrefix]
 		private static void play_with_toy_event(GrabbableObject __instance)
 		{
 			if (__instance.itemProperties.name == "EnginePart1" && __instance.GetComponentInChildren<ScanNodeProperties>() != null && __instance.GetComponentInChildren<ScanNodeProperties>().headerText == item[1] && ca.cfg5_scrap.Value == true && ca.cfg5_playwithtoy.Value == true && __instance.playerHeldBy == GameNetworkManager.Instance.localPlayerController)
@@ -1230,7 +1290,7 @@ namespace kirby
 		{
 			if (ca.cfg5_scrap.Value == true && ca.cfg5_playwithtoy.Value == true)
 			{
-				if (_item == null) { PlayWithToy temp = Object.FindObjectsOfType<PlayWithToy>(true).FirstOrDefault(_ => _.GetComponent<NetworkObject>() != null && _.GetComponent<NetworkObject>().NetworkObjectId == guid); if (temp != null) _item = temp.gameObject.GetComponent<GrabbableObject>(); }
+				if (_item == null) { PlayWithToy temp = Object.FindObjectsByType<PlayWithToy>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(_ => _.GetComponent<NetworkObject>() != null && _.GetComponent<NetworkObject>().NetworkObjectId == guid); if (temp != null) _item = temp.gameObject.GetComponent<GrabbableObject>(); }
 				if (_item != null && _item.itemProperties.name == "EnginePart1" && _item.GetComponentInChildren<ScanNodeProperties>() != null && _item.GetComponentInChildren<ScanNodeProperties>().headerText == item[1])
 				{
 					PlayWithToy play = _item.GetComponent<PlayWithToy>();
@@ -1259,7 +1319,7 @@ namespace kirby
 
 //		// rotation quaternions must be unit length + start position/rotation //
 		[HarmonyPatch(typeof(StartOfRound), "SyncShipUnlockablesClientRpc"), HarmonyPostfix]
-		private static void pst7(StartOfRound __instance)
+		private static void pst6(StartOfRound __instance)
 		{
 			if (ca.cfg7_unlockables.Value == true && __instance.attachedVehicle != null && GameNetworkManager.Instance.isHostingGame == false)
 			{
@@ -1273,7 +1333,7 @@ namespace kirby
 
 //		// QueryTriggerInteraction //
 		[HarmonyPatch(typeof(VehicleController), "CollectItemsInTruck"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn6(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn10(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1292,7 +1352,7 @@ namespace kirby
 
 //		// cruiser 1up //
 		[HarmonyPatch(typeof(Terminal), "LoadNewNodeIfAffordable"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn7(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn11(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1311,22 +1371,22 @@ namespace kirby
 		}
 		public static bool return_exploded()
 		{
-			return (bool)Object.FindObjectsOfType<VehicleController>().FirstOrDefault(_ => (_ != null && _.carDestroyed == false));
+			return (bool)Object.FindObjectsByType<VehicleController>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(_ => (_ != null && _.carDestroyed == false));
 		}
 
 //		// input //
 		[HarmonyPatch(typeof(VehicleController), "DoTurboBoost"), HarmonyPrefix]
-		private static bool pre6()
-		{
-			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
-		}
-		[HarmonyPatch(typeof(VehicleController), "GetVehicleInput"), HarmonyPrefix]
 		private static bool pre7()
 		{
 			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
 		}
+		[HarmonyPatch(typeof(VehicleController), "GetVehicleInput"), HarmonyPrefix]
+		private static bool pre8()
+		{
+			return (ca.cfgr_input.Value == true && GameNetworkManager.Instance.localPlayerController.isTypingChat == true ? false : true);
+		}
 		[HarmonyPatch(typeof(VehicleController), "SetCarEffects"), HarmonyPrefix]
-		private static void pre8(VehicleController __instance, ref float setSteering, ref float ___steeringWheelAnimFloat)
+		private static void pre9(VehicleController __instance, ref float setSteering, ref float ___steeringWheelAnimFloat)
 		{
 			if (__instance.localPlayerInControl)
 			{
@@ -1335,7 +1395,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "UseTurboBoostLocalClient"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn8(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn12(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1378,7 +1438,7 @@ namespace kirby
 		private static bool client_received = false;
 
 		[HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject"), HarmonyPostfix]
-		private static void pst8()
+		private static void pst7()
 		{
 			if (sync == false)
 			{
@@ -1501,17 +1561,17 @@ namespace kirby
 			return false;
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPrefix]
-		private static void pre9()
+		private static void pre10()
 		{
 			disconnected[0] = true;
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
-		private static void pst9()
+		private static void pst8()
 		{
 			reset_network_variables("GameNetworkManager.Disconnect");
 		}
 		[HarmonyPatch(typeof(StartOfRound), "OnDisable"), HarmonyPrefix]
-		private static void pre10()
+		private static void pre11()
 		{
 			reset_network_variables("StartOfRound.OnDisable");
 			if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
@@ -1541,7 +1601,7 @@ namespace kirby
 		private static List<string> loaded_engine = new List<string>();
 
 		[HarmonyPatch(typeof(GameNetworkManager), "SaveItemsInShip"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn9(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn13(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1578,7 +1638,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "SaveGame"), HarmonyPostfix]
-		private static void pst10()
+		private static void pst9()
 		{
 			if (ca.cfg5_scrap.Value == true && ca.cfg5_saveseeds.Value == true && GameNetworkManager.Instance.isHostingGame == true && GameNetworkManager.Instance.disableSteam == false && StartOfRound.Instance.inShipPhase == true && StartOfRound.Instance.isChallengeFile == false)
 			{
@@ -1597,7 +1657,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(StartOfRound), "LoadShipGrabbableItems"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn10(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn14(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -1627,7 +1687,7 @@ namespace kirby
 			}
 		}
 		[HarmonyPatch(typeof(StartOfRound), "Start"), HarmonyPostfix]
-		private static void pst11()
+		private static void pst10()
 		{
 			if (ca.cfg5_scrap.Value == true && ca.cfg5_saveseeds.Value == true && GameNetworkManager.Instance.isHostingGame == true && GameNetworkManager.Instance.disableSteam == false)
 			{
@@ -3014,6 +3074,7 @@ namespace kirby
 	{
 		public string guid = ca.harmony.Id;
 		public float cd = 2f;
+		public int attempts = 10;
 
 		public void Awake()
 		{
@@ -3037,6 +3098,39 @@ namespace kirby
 						{
 							rend.enabled = true;
 							rend.forceRenderingOff = false;
+						}
+					}
+					if (attempts > 0 && go.itemProperties != null)
+					{
+						attempts = attempts - 1;
+						if (attempts == 0 && (!(go.itemProperties.restingRotation == new Vector3(0f, 0f, 90f)) || Mathf.Approximately(go.itemProperties.verticalOffset, 0.4f) == false))
+						{
+							ca.mls.LogError("engine restingRotation and or verticalOffset are still being set by another mod after 10 seconds. restingRotation " + go.itemProperties.restingRotation + ", verticalOffset " + go.itemProperties.verticalOffset);
+						}
+						go.itemProperties.restingRotation = new Vector3(0f, 0f, 90f);
+						go.itemProperties.verticalOffset = 0.4f;
+						if (go.isHeld == false && go.isHeldByEnemy == false)
+						{
+							if (go.floorYRot == -1)
+							{
+								go.transform.rotation = Quaternion.Euler(go.itemProperties.restingRotation.x, go.transform.eulerAngles.y, go.itemProperties.restingRotation.z);
+							}
+							else
+							{
+								go.transform.rotation = Quaternion.Euler(go.itemProperties.restingRotation.x, (float)(go.floorYRot + go.itemProperties.floorYOffset) + 90f, go.itemProperties.restingRotation.z);
+							}
+							if (attempts == 9 && StartOfRound.Instance != null && StartOfRound.Instance.inShipPhase == true && Vector3.Distance(go.transform.position, StartOfRound.Instance.elevatorTransform.position) < 100f)
+							{
+								RaycastHit hitInfo;
+								if (Physics.Raycast(go.transform.position, Vector3.down, out hitInfo, 10f, 268437760, QueryTriggerInteraction.Ignore) || Physics.Raycast(go.transform.position, Vector3.up, out hitInfo, 10f, 268437760, QueryTriggerInteraction.Ignore))
+								{
+									go.targetFloorPosition = hitInfo.point + go.itemProperties.verticalOffset * Vector3.up;
+									if (go.transform.parent != null)
+									{
+										go.targetFloorPosition = go.transform.parent.InverseTransformPoint(go.targetFloorPosition);
+									}
+								}
+							}
 						}
 					}
 				}
