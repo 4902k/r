@@ -83,12 +83,8 @@ namespace Kurosaki
 				await wait_frames(1);
 				if (__instance.gameObject.GetComponent<Kurosaki.temporary>() != null) return;
 				__instance.gameObject.AddComponent<Kurosaki.temporary>();
-				if (first_item[0] == true)
-				{
-					Item r = StartOfRound.Instance.allItemsList.itemsList.First(_ => _.name == "FishTestProp");
-					r.restingRotation = new Vector3(0f, 0f, 90f);
-					r.verticalOffset = 0.15f;
-				}
+				__instance.itemProperties.restingRotation = new Vector3(0f, 0f, 90f);
+				__instance.itemProperties.verticalOffset = 0.15f;
 				if (GameNetworkManager.Instance.disableSteam == false && seeds == "nil")
 				{
 					if (GameNetworkManager.Instance.isHostingGame == false)
@@ -337,13 +333,17 @@ namespace Kurosaki
 				displayingObject.GetComponent<MeshFilter>().mesh = (r == 1 ? null : fish[0]);
 			}
 		}
+		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPrefix]
+		private static void pre3()
+		{
+			disconnected = new bool[] {false, false};
+			reset_local_variables("StartOfRound.Awake");
+		}
 		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPostfix]
 		private static void pst2()
 		{
 			if (GameNetworkManager.Instance.disableSteam == false)
 			{
-				disconnected = new bool[] {false, false};
-				synced_percent = -1;
 				if (GameNetworkManager.Instance.currentLobby.HasValue == true)
 				{
 					lobbyid = (GameNetworkManager.Instance.currentLobby.Value.Id % 1000000000);
@@ -424,16 +424,25 @@ namespace Kurosaki
 			}
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPrefix]
-		private static void pre3()
+		private static void pre4()
 		{
 			disconnected[0] = true;
-			if (StartOfRound.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+		}
+		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
+		private static void pst4()
+		{
+			reset_local_variables("GameNetworkManager.Disconnect");
+		}
+		[HarmonyPatch(typeof(StartOfRound), "OnDisable"), HarmonyPrefix]
+		private static void pre5()
+		{
+			reset_local_variables("StartOfRound.OnDisable");
+			if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
 			{
 				try { NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Koyuki-Host"); NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Koyuki-Client"); } catch (System.Exception error) { koyu.mls.LogError(error); }
 			}
 		}
-		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
-		private static void pst4()
+		private static void reset_local_variables(string s)
 		{
 			sync = false;
 			seeds = "nil";
@@ -443,6 +452,7 @@ namespace Kurosaki
 			loaded_fish = new List<string>();
 			synced_percent = -1;
 			client_received = false;
+			koyu.mls.LogInfo("reset local variables (" + s + ")");
 		}
 
 //		// saving/loading //
@@ -563,6 +573,17 @@ namespace Kurosaki
 				}
 			}
 		}
+		[HarmonyPatch(typeof(GameNetworkManager), "ResetSavedGameValues"), HarmonyPrefix]
+		private static void pre6(GameNetworkManager __instance)
+		{
+			seeds = "nil";
+			saved_fish = "";
+			loaded_fish = new List<string>();
+			if (__instance.isHostingGame == true && ES3.KeyExists("4902.Koyuki-1", __instance.currentSaveFileName) == true)
+			{
+				ES3.DeleteKey("4902.Koyuki-1", __instance.currentSaveFileName);
+			}
+		}
 	}
 
 //	// unreadable mesh to readable mesh //
@@ -634,8 +655,16 @@ namespace Kurosaki
 		public int next32mm(int min, int max)
 		{
 			uint value = next32();
+			if (value == uint.MaxValue) value = value - 1;
 			double scale = ((double)(max - min)) / UInt32.MaxValue;
-			return (int)(min + (value * scale));
+			return (int)(min + (value * scale)); //[min, max)
+		}
+		public uint next32mm(uint min, uint max, bool unsigned)
+		{
+			uint value = next32();
+			if (value == uint.MaxValue) value = value - 1;
+			double scale = ((double)(max - min)) / UInt32.MaxValue;
+			return (uint)(min + (value * scale)); //[min, max)
 		}
 		public byte[] next8()
 		{
@@ -653,8 +682,9 @@ namespace Kurosaki
 		}
 		public double next01()
 		{
-			UInt64 nextInt64 = xoshiro256ss(); //0 inclusive, 1 exclusive
-			return (double)nextInt64 / (double)(UInt64.MaxValue);
+			UInt64 nextInt64 = xoshiro256ss();
+			if (nextInt64 == UInt64.MaxValue) nextInt64 = nextInt64 - 1;
+			return (double)nextInt64 / (double)(UInt64.MaxValue); //[0, 1)
 		}
 
 		//misc
