@@ -117,15 +117,18 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "StartMagneting"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn1(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg1_magnet.Value == true)
 			{
-				if (n >= 11 && l[n - 11].ToString() == "call static UnityEngine.Color UnityEngine.Color::get_white()")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("return_rotation"));
+					if (n >= 11 && l[n - 11].ToString() == "call static UnityEngine.Color UnityEngine.Color::get_white()")
+					{
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("return_rotation"));
+					}
+					yield return l[n];
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				yield return l[n];
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static float return_rotation(float r)
@@ -213,15 +216,18 @@ namespace kirby
 		[HarmonyPatch(typeof(StartOfRound), "openingDoorsSequence", MethodType.Enumerator), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn2(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg3_engine.Value == true || ca.cfg3_radio.Value == true)
 			{
-				yield return l[n];
-				if (n >= 2 && l[n - 2].ToString() == "ldstr \"Closed\"")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("unmute_audio"));
+					yield return l[n];
+					if (n >= 2 && l[n - 2].ToString() == "ldstr \"Closed\"")
+					{
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("unmute_audio"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void unmute_audio()
@@ -257,6 +263,11 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "Start"), HarmonyPrefix]
 		private static void pre3(VehicleController __instance)
 		{
+//			// headlights //
+			if (ca.cfgi_headlights.Value == 2 || ca.cfgi_headlights.Value == 3) { try { set_headlights(__instance); } catch (System.Exception error) { ca.mls.LogError("error setting headlights, " + error); } }
+
+			if (__instance.vehicleID != 0) return;
+
 			string singlestring = (ca.cfg4_light.Value == true ? ", light" : "") + (ca.cfg4_light.Value == true && ca.cfg4_night.Value == true ? ", light switch" : "") + (ca.cfg6_speedometer.Value == true ? ", speedometer" : "") + (ca.cfgk_lever.Value == true ? ", magnet lever" : "");
 			if (singlestring != null && singlestring != "") ca.mls.LogInfo("adding " + singlestring.Substring(2));
 
@@ -504,9 +515,6 @@ namespace kirby
 					ca.mls.LogInfo("added magnet lever");
 				}
 			}
-
-//			// headlights //
-			if (ca.cfgi_headlights.Value == 2 || ca.cfgi_headlights.Value == 3) set_headlights(__instance);
 		}
 		private static async void set_headlights(VehicleController v)
 		{
@@ -532,66 +540,78 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "CancelTryIgnitionClientRpc"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn3(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
 			{
-				yield return l[n];
-				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldarg_0);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					yield return l[n];
+					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+					{
+						yield return new CodeInstruction(OpCodes.Ldarg_0);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "TryIgnition", MethodType.Enumerator), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn4(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
 			{
-				yield return l[n];
-				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldloc_1);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					yield return l[n];
+					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+					{
+						yield return new CodeInstruction(OpCodes.Ldloc_1);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "SetIgnition"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn5(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
 			{
-				yield return l[n];
-				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldarg_0);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					yield return l[n];
+					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+					{
+						yield return new CodeInstruction(OpCodes.Ldarg_0);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "RemoveKey", MethodType.Enumerator), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn6(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
 			{
-				yield return l[n];
-				if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldloc_1);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					yield return l[n];
+					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
+					{
+						yield return new CodeInstruction(OpCodes.Ldloc_1);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void set_lights(VehicleController __instance)
 		{
-			if (__instance.averageCount < 4) return;
+			if (__instance.vehicleID != 0 || __instance.averageCount < 4) return;
 			bool set_on = (bool)typeof(VehicleController).GetField("keyIsInIgnition", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(__instance);
 			if (ca.cfg4_light.Value == true && light_tree != null)
 			{
@@ -617,6 +637,7 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "DestroyCar"), HarmonyPostfix]
 		private static void pst1(VehicleController __instance)
 		{
+			if (__instance.vehicleID != 0) return;
 			if (ca.cfg4_light.Value == true && light_tree != null)
 			{
 				__instance.GetComponentsInChildren<Transform>(true).First(_ => _.name == "cruiser_storage_light(Clone)").gameObject.SetActive(false);
@@ -634,7 +655,7 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "FixedUpdate"), HarmonyPostfix]
 		private static void pst2(VehicleController __instance)
 		{
-			if (ca.cfg6_speedometer.Value == true && meter_cube != null && meter_text != null && __instance.ignitionStarted == true && __instance.averageCount >= 4)
+			if (__instance.vehicleID == 0 && ca.cfg6_speedometer.Value == true && meter_cube != null && meter_text != null && __instance.ignitionStarted == true && __instance.averageCount >= 4)
 			{
 				RectTransform rt = __instance.GetComponentsInChildren<RectTransform>(true).FirstOrDefault(_ => _.name == "cruiser_speedometer_text1(Clone)");
 				if (rt != null && rt.gameObject.activeSelf == true)
@@ -659,6 +680,7 @@ namespace kirby
 			{
 				foreach (VehicleController vehicle in Object.FindObjectsByType<VehicleController>(FindObjectsInactive.Include, FindObjectsSortMode.None))
 				{
+					if (vehicle.vehicleID != 0) continue;
 					Transform lever = vehicle.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_magnet_lever(Clone)");
 					if (lever == null) continue;
 					Animator anime = lever.GetComponent<Animator>();
@@ -680,7 +702,7 @@ namespace kirby
 			RaycastHit hit;
 			Physics.Raycast(r, out hit, player.grabDistance, 1073742656); //player.interactableObjectsMask
 			VehicleController car = hit.collider.gameObject.transform.root.GetComponent<VehicleController>();
-			if (car != null && car.GetComponent<NetworkObject>() != null)
+			if (car != null && car.vehicleID == 0 && car.GetComponent<NetworkObject>() != null)
 			{
 				UInt64 guid = car.GetComponent<NetworkObject>().NetworkObjectId;
 				bool red = !car.GetComponentsInChildren<Transform>(true).First(_ => _.name == "cruiser_night_light").gameObject.activeSelf;
@@ -705,7 +727,7 @@ namespace kirby
 			}
 			else
 			{
-				ca.mls.LogError("switch_light_event error" + (car == null ? ", cruiser was null" : ", cruiser NetworkObject component was null"));
+				ca.mls.LogError("switch_light_event error" + (car == null ? ", cruiser was null" : (car.vehicleID != 0 ? ", vehicleID wasn't 0" : ", cruiser NetworkObject component was null")));
 			}
 		}
 		private static void switch_light(UInt64 guid, bool red)
@@ -713,7 +735,7 @@ namespace kirby
 			if (ca.cfg4_light.Value == true && ca.cfg4_night.Value == true && nightlight != null)
 			{
 				VehicleController car = Object.FindObjectsByType<VehicleController>(FindObjectsInactive.Include, FindObjectsSortMode.None).FirstOrDefault(_ => _.GetComponent<NetworkObject>() != null && _.GetComponent<NetworkObject>().NetworkObjectId == guid);
-				if (car != null)
+				if (car != null && car.vehicleID == 0)
 				{
 					Transform light = car.GetComponentsInChildren<Transform>(true).FirstOrDefault(_ => _.name == "cruiser_storage_light(Clone)");
 					if (light.gameObject.activeSelf == red)
@@ -729,7 +751,7 @@ namespace kirby
 				}
 				else
 				{
-					ca.mls.LogError("switch_light error, cruiser was null");
+					ca.mls.LogError("switch_light error" + (car == null ? ", cruiser was null" : ", vehicleID wasn't 0"));
 				}
 			}
 		}
@@ -1017,17 +1039,20 @@ namespace kirby
 		[HarmonyPatch(typeof(PlayerControllerB), "BeginGrabObject"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn7(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg5_scrap.Value == true)
 			{
-				yield return l[n];
-				if (n > 0 && l[n - 1].ToString() == "call static float UnityEngine.Mathf::Clamp(float value, float min, float max)" && l[n].ToString() == "stfld float GameNetcodeStuff.PlayerControllerB::carryWeight")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldarg_0);
-					yield return new CodeInstruction(OpCodes.Ldfld, typeof(PlayerControllerB).GetField("currentlyGrabbingObject", BindingFlags.NonPublic | BindingFlags.Instance));
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("grab_item"));
+					yield return l[n];
+					if (n > 0 && l[n - 1].ToString() == "call static float UnityEngine.Mathf::Clamp(float value, float min, float max)" && l[n].ToString() == "stfld float GameNetcodeStuff.PlayerControllerB::carryWeight")
+					{
+						yield return new CodeInstruction(OpCodes.Ldarg_0);
+						yield return new CodeInstruction(OpCodes.Ldfld, typeof(PlayerControllerB).GetField("currentlyGrabbingObject", BindingFlags.NonPublic | BindingFlags.Instance));
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("grab_item"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void grab_item(GrabbableObject currentlyGrabbingObject)
@@ -1058,16 +1083,19 @@ namespace kirby
 		[HarmonyPatch(typeof(PlayerControllerB), "SwitchToItemSlot"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn8(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg5_scrap.Value == true)
 			{
-				yield return l[n];
-				if (n < (l.Count - 4) && l[n + 4].ToString() == "callvirt virtual void GrabbableObject::EquipItem()")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldarg_0);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("hold_item"));
+					yield return l[n];
+					if (n < (l.Count - 4) && l[n + 4].ToString() == "callvirt virtual void GrabbableObject::EquipItem()")
+					{
+						yield return new CodeInstruction(OpCodes.Ldarg_0);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("hold_item"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void hold_item(PlayerControllerB player)
@@ -1093,17 +1121,20 @@ namespace kirby
 		[HarmonyPatch(typeof(HUDManager), "DisplayNewScrapFound"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn9(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg5_scrap.Value == true)
 			{
-				if (n < (l.Count - 1) && l[n + 1].ToString() == "callvirt UnityEngine.Renderer[] UnityEngine.GameObject::GetComponentsInChildren()")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldarg_0);
-					yield return new CodeInstruction(OpCodes.Ldloc_0);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("display_cruiser"));
+					if (n < (l.Count - 1) && l[n + 1].ToString() == "callvirt UnityEngine.Renderer[] UnityEngine.GameObject::GetComponentsInChildren()")
+					{
+						yield return new CodeInstruction(OpCodes.Ldarg_0);
+						yield return new CodeInstruction(OpCodes.Ldloc_0);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("display_cruiser"));
+					}
+					yield return l[n];
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				yield return l[n];
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void display_cruiser(HUDManager instance, GameObject displayingObject)
@@ -1141,7 +1172,7 @@ namespace kirby
 		private static void pre6()
 		{
 			disconnected = new bool[] {false, false};
-			reset_network_variables("StartOfRound.Awake");
+			reset_local_variables("StartOfRound.Awake");
 		}
 		public static int discoball = 1;
 		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPostfix]
@@ -1335,18 +1366,21 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "CollectItemsInTruck"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn10(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg8_collide.Value == true)
 			{
-				if (ca.cfg8_collide.Value == true && n < (l.Count - 1) && l[n + 1].ToString() == "call static UnityEngine.Collider[] UnityEngine.Physics::OverlapSphere(UnityEngine.Vector3 position, float radius, int layerMask, UnityEngine.QueryTriggerInteraction queryTriggerInteraction)")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldc_I4_2);
+					if (n < (l.Count - 1) && l[n + 1].ToString() == "call static UnityEngine.Collider[] UnityEngine.Physics::OverlapSphere(UnityEngine.Vector3 position, float radius, int layerMask, UnityEngine.QueryTriggerInteraction queryTriggerInteraction)")
+					{
+						yield return new CodeInstruction(OpCodes.Ldc_I4_2);
+					}
+					else
+					{
+						yield return l[n];
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				else
-				{
-					yield return l[n];
-				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 
@@ -1354,19 +1388,22 @@ namespace kirby
 		[HarmonyPatch(typeof(Terminal), "LoadNewNodeIfAffordable"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn11(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg9_1up.Value == true)
 			{
-				if (ca.cfg9_1up.Value == true && l[n].ToString() == "call static VehicleController UnityEngine.Object::FindObjectOfType()")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("return_exploded"));
-					n = n + 1;
+					if (l[n].ToString() == "call static VehicleController UnityEngine.Object::FindObjectOfType()")
+					{
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("return_exploded"));
+						n = n + 1;
+					}
+					else
+					{
+						yield return l[n];
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				else
-				{
-					yield return l[n];
-				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static bool return_exploded()
@@ -1397,18 +1434,21 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "UseTurboBoostLocalClient"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn12(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfgb_keybind.Value != Key.None)
 			{
-				if (ca.cfgb_keybind.Value != Key.None && l[n].ToString() == "ldfld bool VehicleController::ignitionStarted")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("return_ignition_plus_keybind"));
+					if (l[n].ToString() == "ldfld bool VehicleController::ignitionStarted")
+					{
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("return_ignition_plus_keybind"));
+					}
+					else
+					{
+						yield return l[n];
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				else
-				{
-					yield return l[n];
-				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static bool return_ignition_plus_keybind(VehicleController self)
@@ -1568,18 +1608,18 @@ namespace kirby
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
 		private static void pst8()
 		{
-			reset_network_variables("GameNetworkManager.Disconnect");
+			reset_local_variables("GameNetworkManager.Disconnect");
 		}
 		[HarmonyPatch(typeof(StartOfRound), "OnDisable"), HarmonyPrefix]
 		private static void pre11()
 		{
-			reset_network_variables("StartOfRound.OnDisable");
+			reset_local_variables("StartOfRound.OnDisable");
 			if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
 			{
 				try { NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Host"); NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Cruiser_Additions-Client"); } catch (System.Exception error) { ca.mls.LogError(error); }
 			}
 		}
-		private static void reset_network_variables(string s)
+		private static void reset_local_variables(string s)
 		{
 			sync = false;
 			hostmoveitems = "nil";
@@ -1592,7 +1632,7 @@ namespace kirby
 			loaded_engine = new List<string>();
 			synced_percents = new int[] {-1, -1, -1};
 			client_received = false;
-			ca.mls.LogInfo("reset network variables (" + s + ")");
+			ca.mls.LogInfo("reset local variables (" + s + ")");
 		}
 
 //		// saving/loading //
@@ -1603,17 +1643,20 @@ namespace kirby
 		[HarmonyPatch(typeof(GameNetworkManager), "SaveItemsInShip"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn13(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg5_scrap.Value == true && ca.cfg5_saveseeds.Value == true)
 			{
-				yield return l[n];
-				if (l[n].ToString() == "callvirt virtual void System.Collections.Generic.List<UnityEngine.Vector3>::Add(UnityEngine.Vector3 item)")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldloc_0);
-					yield return new CodeInstruction(OpCodes.Ldloc, 6);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("save_engine"));
+					yield return l[n];
+					if (l[n].ToString() == "callvirt virtual void System.Collections.Generic.List<UnityEngine.Vector3>::Add(UnityEngine.Vector3 item)")
+					{
+						yield return new CodeInstruction(OpCodes.Ldloc_0);
+						yield return new CodeInstruction(OpCodes.Ldloc, 6);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("save_engine"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void save_engine(GrabbableObject[] items, int index)
@@ -1659,16 +1702,19 @@ namespace kirby
 		[HarmonyPatch(typeof(StartOfRound), "LoadShipGrabbableItems"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn14(IEnumerable<CodeInstruction> Instrs)
 		{
-			var l = new List<CodeInstruction>(Instrs);
-			for (int n = 0; n < l.Count; n = n + 1)
+			if (ca.cfg5_scrap.Value == true && ca.cfg5_saveseeds.Value == true)
 			{
-				yield return l[n];
-				if (l[n].ToString() == "callvirt void Unity.Netcode.NetworkObject::Spawn(bool destroyWithScene)")
+				var l = new List<CodeInstruction>(Instrs);
+				for (int n = 0; n < l.Count; n = n + 1)
 				{
-					yield return new CodeInstruction(OpCodes.Ldloc_0);
-					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("load_engine"));
+					yield return l[n];
+					if (l[n].ToString() == "callvirt void Unity.Netcode.NetworkObject::Spawn(bool destroyWithScene)")
+					{
+						yield return new CodeInstruction(OpCodes.Ldloc_0);
+						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("load_engine"));
+					}
+					//ca.mls.LogInfo(l[n].ToString());
 				}
-				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void load_engine(GrabbableObject item)
@@ -1711,6 +1757,17 @@ namespace kirby
 				{
 					ca.mls.LogError("Error loading item types: " + error);
 				}
+			}
+		}
+		[HarmonyPatch(typeof(GameNetworkManager), "ResetSavedGameValues"), HarmonyPrefix]
+		private static void pre12(GameNetworkManager __instance)
+		{
+			seeds = "nil";
+			saved_engine = "";
+			loaded_engine = new List<string>();
+			if (__instance.isHostingGame == true && ES3.KeyExists("4902.Cruiser_Additions-1", __instance.currentSaveFileName) == true)
+			{
+				ES3.DeleteKey("4902.Cruiser_Additions-1", __instance.currentSaveFileName);
 			}
 		}
 	}
@@ -3187,8 +3244,16 @@ namespace kirby
 		public int next32mm(int min, int max)
 		{
 			uint value = next32();
+			if (value == UInt32.MaxValue) value = value - 1;
 			double scale = ((double)(max - min)) / UInt32.MaxValue;
-			return (int)(min + (value * scale));
+			return (int)(min + (value * scale)); //[min, max)
+		}
+		public uint next32mm(uint min, uint max, bool unsigned)
+		{
+			uint value = next32();
+			if (value == UInt32.MaxValue) value = value - 1;
+			double scale = ((double)(max - min)) / UInt32.MaxValue;
+			return (uint)(min + (value * scale)); //[min, max)
 		}
 		public byte[] next8()
 		{
@@ -3206,8 +3271,9 @@ namespace kirby
 		}
 		public double next01()
 		{
-			UInt64 nextInt64 = xoshiro256ss(); //0 inclusive, 1 exclusive
-			return (double)nextInt64 / (double)(UInt64.MaxValue);
+			UInt64 nextInt64 = xoshiro256ss();
+			if (nextInt64 == UInt64.MaxValue) nextInt64 = nextInt64 - 1;
+			return (double)nextInt64 / (double)(UInt64.MaxValue); //[0, 1)
 		}
 
 		//misc
