@@ -216,18 +216,15 @@ namespace kirby
 		[HarmonyPatch(typeof(StartOfRound), "openingDoorsSequence", MethodType.Enumerator), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn2(IEnumerable<CodeInstruction> Instrs)
 		{
-			if (ca.cfg3_engine.Value == true || ca.cfg3_radio.Value == true)
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
 			{
-				var l = new List<CodeInstruction>(Instrs);
-				for (int n = 0; n < l.Count; n = n + 1)
+				yield return l[n];
+				if ((ca.cfg3_engine.Value == true || ca.cfg3_radio.Value == true) && n >= 2 && l[n - 2].ToString() == "ldstr \"Closed\"")
 				{
-					yield return l[n];
-					if (n >= 2 && l[n - 2].ToString() == "ldstr \"Closed\"")
-					{
-						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("unmute_audio"));
-					}
-					//ca.mls.LogInfo(l[n].ToString());
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("unmute_audio"));
 				}
+				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void unmute_audio()
@@ -540,73 +537,61 @@ namespace kirby
 		[HarmonyPatch(typeof(VehicleController), "CancelTryIgnitionClientRpc"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn3(IEnumerable<CodeInstruction> Instrs)
 		{
-			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
 			{
-				var l = new List<CodeInstruction>(Instrs);
-				for (int n = 0; n < l.Count; n = n + 1)
+				yield return l[n];
+				if ((ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true) && l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
 				{
-					yield return l[n];
-					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
-					{
-						yield return new CodeInstruction(OpCodes.Ldarg_0);
-						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
-					}
-					//ca.mls.LogInfo(l[n].ToString());
+					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
 				}
+				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "TryIgnition", MethodType.Enumerator), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn4(IEnumerable<CodeInstruction> Instrs)
 		{
-			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
 			{
-				var l = new List<CodeInstruction>(Instrs);
-				for (int n = 0; n < l.Count; n = n + 1)
+				yield return l[n];
+				if ((ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true) && l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
 				{
-					yield return l[n];
-					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
-					{
-						yield return new CodeInstruction(OpCodes.Ldloc_1);
-						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
-					}
-					//ca.mls.LogInfo(l[n].ToString());
+					yield return new CodeInstruction(OpCodes.Ldloc_1);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
 				}
+				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "SetIgnition"), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn5(IEnumerable<CodeInstruction> Instrs)
 		{
-			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
 			{
-				var l = new List<CodeInstruction>(Instrs);
-				for (int n = 0; n < l.Count; n = n + 1)
+				yield return l[n];
+				if ((ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true) && l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
 				{
-					yield return l[n];
-					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
-					{
-						yield return new CodeInstruction(OpCodes.Ldarg_0);
-						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
-					}
-					//ca.mls.LogInfo(l[n].ToString());
+					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
 				}
+				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		[HarmonyPatch(typeof(VehicleController), "RemoveKey", MethodType.Enumerator), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn6(IEnumerable<CodeInstruction> Instrs)
 		{
-			if (ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true)
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
 			{
-				var l = new List<CodeInstruction>(Instrs);
-				for (int n = 0; n < l.Count; n = n + 1)
+				yield return l[n];
+				if ((ca.cfg4_light.Value == true || ca.cfg6_speedometer.Value == true) && l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
 				{
-					yield return l[n];
-					if (l[n].ToString() == "call void VehicleController::SetFrontCabinLightOn(bool setOn)")
-					{
-						yield return new CodeInstruction(OpCodes.Ldloc_1);
-						yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
-					}
-					//ca.mls.LogInfo(l[n].ToString());
+					yield return new CodeInstruction(OpCodes.Ldloc_1);
+					yield return new CodeInstruction(OpCodes.Call, typeof(cruiser_additions).GetMethod("set_lights"));
 				}
+				//ca.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void set_lights(VehicleController __instance)
