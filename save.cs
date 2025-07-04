@@ -530,18 +530,15 @@ namespace baldatro
 		[HarmonyPatch(typeof(MenuManager), "delayedStartScene", MethodType.Enumerator), HarmonyTranspiler]
 		private static IEnumerable<CodeInstruction> trn3(IEnumerable<CodeInstruction> Instrs)
 		{
-			if (su.cfg2_backup_mode.Value == 1 || su.cfg2_backup_mode.Value == 3)
+			var l = new List<CodeInstruction>(Instrs);
+			for (int n = 0; n < l.Count; n = n + 1)
 			{
-				var l = new List<CodeInstruction>(Instrs);
-				for (int n = 0; n < l.Count; n = n + 1)
+				yield return l[n];
+				if ((su.cfg2_backup_mode.Value == 1 || su.cfg2_backup_mode.Value == 3) && l[n].ToString() == "callvirt virtual void TMPro.TMP_Text::set_text(string value)")
 				{
-					yield return l[n];
-					if (l[n].ToString() == "callvirt virtual void TMPro.TMP_Text::set_text(string value)")
-					{
-						yield return new CodeInstruction(OpCodes.Call, typeof(save_utils).GetMethod("call_create_backup"));
-					}
-					//su.mls.LogInfo(l[n].ToString());
+					yield return new CodeInstruction(OpCodes.Call, typeof(save_utils).GetMethod("call_create_backup"));
 				}
+				//su.mls.LogInfo(l[n].ToString());
 			}
 		}
 		public static void call_create_backup()
