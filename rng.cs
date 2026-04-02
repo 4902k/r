@@ -125,7 +125,7 @@ namespace random_moons
 		}
 	}
 	[HarmonyPatch(typeof(Terminal))]
-	internal class t
+	internal class rm_t
 	{
 		public static TerminalNode _node;
 		public static TerminalKeyword _word;
@@ -159,24 +159,24 @@ print("1.1");		gold_key = __instance.terminalNodes.allKeywords.First(_ => _.name
 				clearPreviousText = true,
 				overrideOptions = true,
 				terminalOptions = new CompatibleNoun[] {
-					new CompatibleNoun {
-						result = new TerminalNode {
-							displayText = "You have cancelled the order.\n\n",
-						},
-						noun = new TerminalKeyword {
+					new CompatibleNoun (
+						new TerminalKeyword { //noun
 							word = "deny",
 						},
-					},
-					new CompatibleNoun {
-						result = new TerminalNode {
+						new TerminalNode { //result
+							displayText = "You have cancelled the order.\n\n",
+						}
+					),
+					new CompatibleNoun (
+						new TerminalKeyword { //noun
+							word = "confirm",
+						},
+						new TerminalNode { //result
 							name = "randomizer_confirm",
 							displayText = "Routing autopilot to [name].\n" + (c.cfg_key.Value == true ? "Key is [key].\n\n" : "\n") + "Good luck.\n\n",
 							clearPreviousText = true,
-						},
-						noun = new TerminalKeyword {
-							word = "confirm",
-						},
-					},
+						}
+					),
 				},
 			};
 			_word = new TerminalKeyword {
@@ -188,62 +188,63 @@ print("1.1");		gold_key = __instance.terminalNodes.allKeywords.First(_ => _.name
 				word = "modifiers",
 				isVerb = true,
 				compatibleNouns = new CompatibleNoun[] {
-					new CompatibleNoun {
-						result = new TerminalNode {
+					new CompatibleNoun (
+						_word, //noun
+						new TerminalNode { //result
 							name = "randomizer_modifier",
 							displayText = "temp\n\n",
 							clearPreviousText = true,
-						},
-						noun = _word,
-					},
+						}
+					),
 				},
 			};
 			_key = new TerminalKeyword {
 				word = "key",
 				isVerb = true,
 				compatibleNouns = new CompatibleNoun[] {
-					new CompatibleNoun {
-						result = new TerminalNode {
+					new CompatibleNoun (
+						_word, //noun
+						new TerminalNode { //result
 							name = "randomizer_key_prompt",
 							displayText = "Enter an eight digit key.\n\n",
 							clearPreviousText = true,
 							maxCharactersToType = 9,
 							terminalOptions = new CompatibleNoun[] {
-								new CompatibleNoun {
-									result = new TerminalNode {
+								new CompatibleNoun (
+									new TerminalKeyword {}, //noun
+									new TerminalNode { //result
 										name = "randomizer_key_select",
 										displayText = "select\n\n",
 										clearPreviousText = true,
 										overrideOptions = true,
 										terminalOptions = new CompatibleNoun[] {
-											new CompatibleNoun {
-												result = new TerminalNode {
-													displayText = "You have cancelled the order.\n\n",
-												},
-												noun = new TerminalKeyword {
+											new CompatibleNoun (
+												new TerminalKeyword { //noun
 													word = "deny",
 												},
-											},
-											new CompatibleNoun {
-												result = new TerminalNode {
+												new TerminalNode { //result
+													displayText = "You have cancelled the order.\n\n",
+												}
+											),
+											new CompatibleNoun (
+												new TerminalKeyword { //noun
+													word = "confirm",
+												},
+												new TerminalNode { //result
 													name = "randomizer_key_confirm",
 													displayText = "confirm\n\n",
 													clearPreviousText = true,
 													buyRerouteToMoon = -1,
 													itemCost = 0,
-												},
-												noun = new TerminalKeyword {
-													word = "confirm",
-												},
-											},
+												}
+											),
 										},
-									},
-								},
+									}
+								),
 							},
 							acceptAnything = true,
-						},
-						noun = _word,
-					},
+						}
+					),
 				},
 			};
 			_key_select = _key.compatibleNouns[0].result.terminalOptions[0].result;
@@ -260,8 +261,8 @@ print("1.1");		gold_key = __instance.terminalNodes.allKeywords.First(_ => _.name
 			__instance.terminalNodes.allKeywords = __instance.terminalNodes.allKeywords.AddToArray(_word);
 			__instance.terminalNodes.allKeywords = __instance.terminalNodes.allKeywords.AddToArray(_modifier);
 			if (c.cfg_key.Value == true) __instance.terminalNodes.allKeywords = __instance.terminalNodes.allKeywords.AddToArray(_key);
-			route.compatibleNouns = route.compatibleNouns.AddToArray(new CompatibleNoun {result = _node, noun = _word});
-			info.compatibleNouns = info.compatibleNouns.AddToArray(new CompatibleNoun {result = new TerminalNode {name = "randomizer_info", displayText = text2, clearPreviousText = true}, noun = _word});
+			route.compatibleNouns = route.compatibleNouns.AddToArray(new CompatibleNoun (_word, _node));
+			info.compatibleNouns = info.compatibleNouns.AddToArray(new CompatibleNoun (_word, new TerminalNode {name = "randomizer_info", displayText = text2, clearPreviousText = true}));
 		}
 		[HarmonyPatch("OnSubmit"), HarmonyPrefix]
 		private static void pre1(Terminal __instance)
@@ -277,7 +278,7 @@ print("2.3");					uint k = System.Convert.ToUInt32(hex, 16);
 						Shion cr1 = new Shion(k + 350);
 						_key_confirm.itemCost = c.cfg_kcd.Value - ((cr1.next32mm(0, c.cfg_kcr.Value + 1) * 10) * (cr1.next32mm(0, 10) < 4 ? -1 : 1));
 						if (_key_confirm.itemCost < 100) _key_confirm.itemCost = (c.cfg_tst.Value == false ? 100 : 0);
-						gnm.k = k;
+						rm_gnm.k = k;
 						_key_confirm.displayText = GameNetworkManager.Instance.GetNameForWeekNumber();
 						_key_select.displayText = (StartOfRound.Instance.connectedPlayersAmount + 1 > 1 ? "! Ship will automatically start !\n\n" : "") + "The cost to route to " + _key_confirm.displayText + " is $" + _key_confirm.itemCost + ".\n\nPlease CONFIRM or DENY.\n\n";
 						if (GameNetworkManager.Instance.isHostingGame == true)
@@ -317,13 +318,13 @@ print("2.7");				_cancel.displayText = __instance.currentNode.displayText + "[Ca
 		{
 			if (node.name == "randomizer_key_confirm" && GameNetworkManager.Instance.isHostingGame == true && __instance.useCreditsCooldown == false && ___groupCredits >= _key_confirm.itemCost && _key_confirm.buyRerouteToMoon != -1 && node.isConfirmationNode == false)
 			{
-print("3.1");			StartOfRound start = Object.FindObjectOfType<StartOfRound>();
-				if (start.inShipPhase == true && start.travellingToNewLevel == false && start.isChallengeFile == false && start.levels[_key_confirm.buyRerouteToMoon] != start.currentLevel)
+print("3.1");			StartOfRound start = StartOfRound.Instance;
+				if (start != null && start.inShipPhase == true && start.travellingToNewLevel == false && start.isChallengeFile == false && start.levels[_key_confirm.buyRerouteToMoon] != start.currentLevel)
 				{
 print("3.2");				_key_confirm.displayText = "Routing autopilot to " + _key_confirm.displayText + ".\nYour new balance is $" + (___groupCredits - _key_confirm.itemCost) + ".\n\n" + (new Shion().next32mm(0, 2) == 1 ? "Good luck.\n\n" : "Please enjoy your flight.\n\n");
 					c.key = typed_key;
 					c.chosen = true;
-					gnm.k = c.key;
+					rm_gnm.k = c.key;
 					string name = GameNetworkManager.Instance.GetNameForWeekNumber();
 					if (c.keys.Contains(name) == false)
 					{
@@ -370,7 +371,7 @@ print("4.5");			c.cfg_cmm.Value = !c.cfg_cmm.Value;
 				if (c.cfg_cmm.Value != c.temp_cmm.Value) c.mls.LogError("challenge moon modifiers config is not the same as itself. (" + c.cfg_cmm.Value + " & " + c.temp_cmm.Value + ")");
 				text3 = (c.cfg_cmm.Value == true ? " challenge " : " ");
 				text1 = "Route the autopilot to a random" + text3 + "moon.\n\nPlease CONFIRM or DENY.\n\n";
-				Object.FindObjectOfType<Terminal>().terminalNodes.allKeywords.First(_ => _.name == "Moons").specialKeywordResult.displayText = gold_key + "* Randomizer   //   Random" + text3 + "moons\n\n";
+				Object.FindAnyObjectByType<Terminal>(FindObjectsInactive.Include).terminalNodes.allKeywords.First(_ => _.name == "Moons").specialKeywordResult.displayText = gold_key + "* Randomizer   //   Random" + text3 + "moons\n\n";
 				node.displayText = "Challenge moon modifiers set from " + (!c.cfg_cmm.Value).ToString().ToLower() + " to " + c.cfg_cmm.Value.ToString().ToLower() + ".\n\n";
 			}
 			else if (node.name == "randomizer_key_prompt")
@@ -392,8 +393,8 @@ print("4.8");				node.displayText = "Enter an eight digit key. Press enter with 
 			{
 print("5.1");			if (GameNetworkManager.Instance.isHostingGame == true)
 				{
-print("5.2");				StartOfRound start = Object.FindObjectOfType<StartOfRound>();
-					if (start.inShipPhase == true && start.travellingToNewLevel == false)
+print("5.2");				StartOfRound start = StartOfRound.Instance;
+					if (start != null && start.inShipPhase == true && start.travellingToNewLevel == false)
 					{
 print("5.3");					if (start.isChallengeFile == false)
 						{
@@ -452,12 +453,12 @@ print("6.1");			string str = (text.Contains("\u2554") == true ? (text.Contains("
 		private static void print(string _) { if (c.cfg_pri.Value == true) c.mls.LogInfo("Terminal:" + _); }
 	}
 	[HarmonyPatch(typeof(StartOfRound))]
-	internal class sor
+	internal class rm_sor
 	{
 		[HarmonyPatch("Awake"), HarmonyPostfix]
 		private static void pst1()
 		{
-print("1.0");		gnm.reset_network_variables("StartOfRound.Awake");
+print("1.0");		rm_gnm.reset_local_variables("StartOfRound.Awake");
 		}
 		[HarmonyPatch("Start"), HarmonyPostfix]
 		private static void pst2(StartOfRound __instance)
@@ -492,8 +493,8 @@ print("2.2");					c.moon_n = ES3.Load("4902.Random_Moons-2", save, "name");
 		{
 print("3.0");		if (c.real == 0)
 			{
-print("3.1");			pcb.stars = new string[] {"name", "ffffff", "description"};
-				pcb.presets = new bool[] {false, false, false};
+print("3.1");			rm_pcb.stars = new string[] {"name", "ffffff", "description"};
+				rm_pcb.presets = new bool[] {false, false, false};
 				if (c.chosen == true)
 				{
 print("3.2");				c.moon_n = GameNetworkManager.Instance.GetNameForWeekNumber();
@@ -502,13 +503,13 @@ print("3.2");				c.moon_n = GameNetworkManager.Instance.GetNameForWeekNumber();
 					if (!(c.hitori == true && NetworkManager.Singleton.ConnectedClients.Count > 1) && (c.cfg_ltn.Value == true || StartOfRound.Instance.connectedPlayersAmount + 1 > 1))
 					{
 print("3.3");					string color = (c.cfg_mcc.Value == true ? c.moon_c : "FFFF00");
-						string text = (c.key == t.typed_key ? "" : " random");
-						HUDManager.Instance.AddTextToChatOnServer("</color><color=#FF0000>Routing to" + text + t.text3 + "moon:</color>\n<size=14><color=#" + color + ">" + c.moon_n + "</color></size>", -1);
-						c.mls.LogMessage("Routing to" + text + t.text3 + "moon " + c.moon_n + "(" + c.moon_c + ")");
+						string text = (c.key == rm_t.typed_key ? "" : " random");
+						HUDManager.Instance.AddTextToChatOnServer("</color><color=#FF0000>Routing to" + text + rm_t.text3 + "moon:</color>\n<size=14><color=#" + color + ">" + c.moon_n + "</color></size>", -1);
+						c.mls.LogMessage("Routing to" + text + rm_t.text3 + "moon " + c.moon_n + "(" + c.moon_c + ")");
 					}
 					if (StartOfRound.Instance.connectedPlayersAmount + 1 > 1)
 					{
-print("3.4");					pcb.host_send_all();
+print("3.4");					rm_pcb.host_send_all();
 					}
 				}
 				else
@@ -541,17 +542,17 @@ print("5.1");			temp1 = false;
 				__instance.screenLevelDescription.text = moons.create_description(c.moon_n, c.moon_c, c.moon_d, true);
 				if (!(c.hitori == true && NetworkManager.Singleton.ConnectedClients.Count > 1) && (StartOfRound.Instance.connectedPlayersAmount + 1 > 1))
 				{
-print("5.2");				StartMatchLever lever = Object.FindObjectOfType<StartMatchLever>();
+print("5.2");				StartMatchLever lever = Object.FindAnyObjectByType<StartMatchLever>(FindObjectsInactive.Include);
 					await Task.Delay(250);
 					lever.PlayLeverPullEffectsServerRpc(true);
 					await Task.Delay(1500);
 					lever.StartGame();
 				}
 			}
-			else if (pcb.presets[0] == true)
+			else if (rm_pcb.presets[0] == true)
 			{
-print("5.3");			__instance.screenLevelDescription.text = moons.create_description(pcb.stars[0], pcb.stars[1], pcb.stars[2], true);
-				pcb.presets[0] = false;
+print("5.3");			__instance.screenLevelDescription.text = moons.create_description(rm_pcb.stars[0], rm_pcb.stars[1], rm_pcb.stars[2], true);
+				rm_pcb.presets[0] = false;
 			}
 		}
 		[HarmonyPatch("StartGame"), HarmonyPrefix]
@@ -591,7 +592,7 @@ print("7.4");					HUDManager.Instance.AddTextToChatOnServer("</color><color=#C0C
 				}
 			}
 		}
-		[HarmonyPatch("ShipLeave"), HarmonyPostfix]
+		[HarmonyPatch("ShipLeave"), HarmonyPrefix]
 		private static void pre3()
 		{
 print("8.0");		if (c.cfg_dsc.Value != 2)
@@ -611,10 +612,10 @@ print("9.0");		if (c.chosen_moon == true)
 			{
 print("9.1");			__instance.screenLevelDescription.text = moons.create_description(c.moon_n, c.moon_c, c.moon_d, true);
 			}
-			else if (pcb.presets[2] == true)
+			else if (rm_pcb.presets[2] == true)
 			{
-print("9.2");			__instance.screenLevelDescription.text = moons.create_description(pcb.stars[0], pcb.stars[1], pcb.stars[2], true);
-				pcb.presets = new bool[] {false, false, false};
+print("9.2");			__instance.screenLevelDescription.text = moons.create_description(rm_pcb.stars[0], rm_pcb.stars[1], rm_pcb.stars[2], true);
+				rm_pcb.presets = new bool[] {false, false, false};
 			}
 		}
 		private static bool temp2 = false;
@@ -637,13 +638,13 @@ print("10.1");			temp2 = true;
 print("11.0");		if (c.cfg_dsc.Value == 3 && temp2 == true && __instance.inShipPhase == true && __instance.travellingToNewLevel == false && c.real != 1 && GameNetworkManager.Instance.isHostingGame == true)
 			{
 print("11.1");			temp2 = false;
-				__instance.ChangeLevelServerRpc(3, Object.FindObjectOfType<Terminal>().groupCredits);
+				__instance.ChangeLevelServerRpc(3, Object.FindAnyObjectByType<Terminal>(FindObjectsInactive.Include).groupCredits);
 			}
 		}
 		[HarmonyPatch("OnDisable"), HarmonyPrefix]
 		private static void pre5()
 		{
-print("12.0");		gnm.reset_network_variables("StartOfRound.OnDisable");
+print("12.0");		rm_gnm.reset_local_variables("StartOfRound.OnDisable");
 			if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
 			{
 print("12.1");			try { NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Random_Moons-Host"); NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Random_Moons-Client"); } catch (System.Exception error) { c.mls.LogError(error); }
@@ -652,7 +653,7 @@ print("12.1");			try { NetworkManager.Singleton.CustomMessagingManager.Unregiste
 		private static void print(string _) { if (c.cfg_pri.Value == true) c.mls.LogInfo("StartOfRound:" + _); }
 	}
 	[HarmonyPatch(typeof(RoundManager))]
-	internal class rm
+	internal class rm_rm
 	{
 		[HarmonyPatch("SetChallengeFileRandomModifiers")]
 		private static void Postfix(RoundManager __instance)
@@ -662,22 +663,48 @@ print("1.0");		if (c.cfg_cmm.Value == true && c.chosen_moon == true && c.real !=
 print("1.1");			__instance.increasedMapPropSpawnRateIndex = -1;
 			}
 		}
+		[HarmonyPatch("RefreshEnemiesList"), HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> trn4(IEnumerable<CodeInstruction> Instrs)
+		{
+			List<CodeInstruction> l = Instrs.ToList();
+			for (int n = 0; n < l.Count; n = n + 1)
+			{
+				if (l[n].opcode == OpCodes.Stfld && l[n].operand.ToString() == "System.Int32 enemyRushIndex" && n > 3 && l[n - 3].opcode == OpCodes.Stfld && l[n - 3].operand.ToString() == "System.Single currentMaxOutsidePower")
+				{
+					l[n - 2].opcode = OpCodes.Nop;
+					l[n - 1].opcode = OpCodes.Nop;
+					l[n].opcode = OpCodes.Nop;
+					break;
+				}
+			}
+			return l;
+		}
 		[HarmonyPatch("RefreshEnemiesList")]
 		private static void Prefix(RoundManager __instance)
 		{
-print("2.0");		if (c.cfg_cmm.Value == true && c.chosen_moon == true && c.real != 1 && StartOfRound.Instance.isChallengeFile == true)
+print("2.0");		if (StartOfRound.Instance.isChallengeFile == true)
 			{
-print("2.1");			bool temp = (c.key != 0 && (c.cfg_dsc.Value == 2 || c.cfg_rms.Value == true || c.start_keys.Contains(c.key.ToString("X8").Insert(4, " ")) == false));
-				Shion cr1 = (temp == true ? new Shion(c.key + 65) : new Shion());
-				Shion cr2 = (temp == true ? new Shion(c.key + 14) : new Shion());
-				typeof(RoundManager).GetField("enemyRushIndex", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, (cr1.next32mm(0, 100) < c.cfg_inf.Value ? cr2.next32mm(0, __instance.currentLevel.Enemies.Count) : -1));
-				try_enabling_fog(__instance);
-			}
-			else if (c.cfg_vcs.Value == true && c.real == 1 && StartOfRound.Instance.isChallengeFile == true)
-			{
-print("2.2");			Shion cr1 = new Shion((UInt64)(StartOfRound.Instance.randomMapSeed + 65));
-				Shion cr2 = new Shion((UInt64)(StartOfRound.Instance.randomMapSeed + 14));
-				typeof(RoundManager).GetField("enemyRushIndex", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, (cr1.next32mm(0, 100) < c.cfg_inf.Value ? cr2.next32mm(0, __instance.currentLevel.Enemies.Count) : -1));
+print("2.1");			if (c.real != 1)
+				{
+print("2.2");				if (c.cfg_cmm.Value == true && c.chosen_moon == true)
+					{
+print("2.3");					bool temp = (c.key != 0 && (c.cfg_dsc.Value == 2 || c.cfg_rms.Value == true || c.start_keys.Contains(c.key.ToString("X8").Insert(4, " ")) == false));
+						Shion cr1 = (temp == true ? new Shion(c.key + 65) : new Shion());
+						Shion cr2 = (temp == true ? new Shion(c.key + 14) : new Shion());
+						typeof(RoundManager).GetField("enemyRushIndex", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, (cr1.next32mm(0, 100) < c.cfg_inf.Value ? cr2.next32mm(0, __instance.currentLevel.Enemies.Count) : -1));
+						try_enabling_fog(__instance);
+					}
+				}
+				else if (c.cfg_vcs.Value == true)
+				{
+print("2.4");				Shion cr1 = new Shion((UInt64)(StartOfRound.Instance.randomMapSeed + 65));
+					Shion cr2 = new Shion((UInt64)(StartOfRound.Instance.randomMapSeed + 14));
+					typeof(RoundManager).GetField("enemyRushIndex", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, (cr1.next32mm(0, 100) < c.cfg_inf.Value ? cr2.next32mm(0, __instance.currentLevel.Enemies.Count) : -1));
+				}
+				else
+				{
+print("2.5");				typeof(RoundManager).GetField("enemyRushIndex", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(__instance, -1);
+				}
 			}
 		}
 		private static void try_enabling_fog(RoundManager __instance)
@@ -700,34 +727,34 @@ print("2.2");			Shion cr1 = new Shion((UInt64)(StartOfRound.Instance.randomMapSe
 			}
 		}
 		[HarmonyPatch("PlotOutEnemiesForNextHour"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn1(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn2(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
 			{
 				if (n < (l.Count - 1) && l[n + 1].ToString() == "ldfld int RoundManager::enemyRushIndex")
 				{
-					yield return new CodeInstruction(OpCodes.Ldloc_3);
-					yield return new CodeInstruction(OpCodes.Call, typeof(rm).GetMethod("set_num3"));
-					yield return new CodeInstruction(OpCodes.Stloc_3);
+					yield return new CodeInstruction(OpCodes.Ldloc_2);
+					yield return new CodeInstruction(OpCodes.Call, typeof(rm_rm).GetMethod("set_spawn_rate_num")); //(should be "num? += 2" inside if enemyRushIndex != -1)
+					yield return new CodeInstruction(OpCodes.Stloc_2);
 				}
 				yield return l[n];
 				//yon.mls.LogInfo(l[n].ToString());
 			}
 		}
-		public static int set_num3(int num3)
+		public static int set_spawn_rate_num(int num)
 		{
 			if ((int)(typeof(RoundManager).GetField("enemyRushIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(RoundManager.Instance)) == -1 && StartOfRound.Instance.isChallengeFile == true)
 			{
 				if ((c.cfg_cmm.Value == true && c.chosen_moon == true && c.real != 1) || (c.cfg_vcs.Value == true && c.real == 1))
 				{
-					return num3 + 2;
+					return num + 2;
 				}
 			}
-			return num3;
+			return num;
 		}
 		[HarmonyPatch("AssignRandomEnemyToVent"), HarmonyTranspiler]
-		private static IEnumerable<CodeInstruction> trn2(IEnumerable<CodeInstruction> Instrs)
+		private static IEnumerable<CodeInstruction> trn3(IEnumerable<CodeInstruction> Instrs)
 		{
 			var l = new List<CodeInstruction>(Instrs);
 			for (int n = 0; n < l.Count; n = n + 1)
@@ -735,15 +762,15 @@ print("2.2");			Shion cr1 = new Shion((UInt64)(StartOfRound.Instance.randomMapSe
 				yield return l[n];
 				if (l[n].opcode == OpCodes.Ldstr && l[n].operand.ToString() == "Probability: {0}; enemy type: {1}")
 				{
-					yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
-					yield return new CodeInstruction(OpCodes.Call, typeof(rm).GetMethod("set_num2"));
-					yield return new CodeInstruction(OpCodes.Stloc_S, 4);
+					yield return new CodeInstruction(OpCodes.Ldloc_S, 9);
+					yield return new CodeInstruction(OpCodes.Call, typeof(rm_rm).GetMethod("set_spawn_probability_num")); //(should be "SpawnProbabilities.Add(num?)" after debug string)
+					yield return new CodeInstruction(OpCodes.Stloc_S, 9);
 					yield return new CodeInstruction(OpCodes.Ldstr, "Probability: {0}; enemy type: {1}");
 				}
 				//yon.mls.LogInfo(l[n].ToString());
 			}
 		}
-		public static int set_num2(string temp, int num2)
+		public static int set_spawn_probability_num(string temp, int num)
 		{
 			if ((int)(typeof(RoundManager).GetField("enemyRushIndex", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(RoundManager.Instance)) == -1 && StartOfRound.Instance.isChallengeFile == true)
 			{
@@ -752,15 +779,15 @@ print("2.2");			Shion cr1 = new Shion((UInt64)(StartOfRound.Instance.randomMapSe
 					return 1;
 				}
 			}
-			return num2;
+			return num;
 		}
 		private static void print(string _) { if (c.cfg_pri.Value == true) c.mls.LogInfo("RoundManager:" + _); }
 	}
 	[HarmonyPatch(typeof(OutOfBoundsTrigger))]
-	internal class ote
+	internal class rm_ote
 	{
-		[HarmonyPatch("OnTriggerEnter")]
-		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+		[HarmonyPatch("OnTriggerEnter"), HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> trn4(IEnumerable<CodeInstruction> instructions)
 		{
 			List<CodeInstruction> list = instructions.ToList();
 			for (int n = 0; n < list.Count; n = n + 1)
@@ -777,7 +804,7 @@ print("2.2");			Shion cr1 = new Shion((UInt64)(StartOfRound.Instance.randomMapSe
 		}
 	}
 	[HarmonyPatch(typeof(UnityEngine.Animator))]
-	internal class uea
+	internal class rm_uea
 	{
 		[HarmonyPatch("SetTrigger", new System.Type[] {typeof(string)})]
 		private static void Postfix(ref string name)
@@ -786,26 +813,26 @@ print("2.2");			Shion cr1 = new Shion((UInt64)(StartOfRound.Instance.randomMapSe
 		}
 		private static async void wait(string name)
 		{
-			if (name == "introAnimation" && (c.chosen_moon == true || pcb.presets[1] == true))
+			if (name == "introAnimation" && (c.chosen_moon == true || rm_pcb.presets[1] == true))
 			{
 print("1.1");			await Task.Delay(10);
-				string moon = (c.cfg_mdn.Value == true ? StartOfRound.Instance.currentLevel.PlanetName : (c.chosen_moon == true ? c.moon_n : pcb.stars[0]));
+				string moon = (c.cfg_mdn.Value == true ? StartOfRound.Instance.currentLevel.PlanetName : (c.chosen_moon == true ? c.moon_n : rm_pcb.stars[0]));
 				HUDManager.Instance.planetInfoHeaderText.text = "CELESTIAL BODY: " + moon;
-				if (pcb.presets[1] == true)
+				if (rm_pcb.presets[1] == true)
 				{
-print("1.2");				pcb.presets = new bool[] {false, false, pcb.presets[2]};
+print("1.2");				rm_pcb.presets = new bool[] {false, false, rm_pcb.presets[2]};
 				}
 			}
 		}
 		private static void print(string _) { if (c.cfg_pri.Value == true) c.mls.LogInfo("UnityEngine.Animator:" + _); }
 	}
 	[HarmonyPatch(typeof(GameNetworkManager))]
-	internal class gnm
+	internal class rm_gnm
 	{
 		public static uint k = 0;
 
-		[HarmonyPatch("GetWeekNumber")]
-		private static bool Prefix(ref int __result)
+		[HarmonyPatch("GetWeekNumber"), HarmonyPrefix]
+		private static bool pre1(ref int __result)
 		{
 			if (k != 0)
 			{
@@ -827,7 +854,7 @@ print("2.0");		if (c.cfg_slm.Value == true && c.real != 1 && StartOfRound.Instan
 			{
 				try
 				{
-					StartOfRound start = Object.FindObjectOfType<StartOfRound>();
+					StartOfRound start = StartOfRound.Instance;
 					if (start != null)
 					{
 print("2.1");					ES3.Save("4902.Random_Moons-1", c.chosen_moon, __instance.currentSaveFileName);
@@ -850,9 +877,30 @@ print("2.2");						ES3.Save("4902.Random_Moons-2", c.moon_n, __instance.currentS
 		[HarmonyPatch("Disconnect"), HarmonyPostfix]
 		private static void pst2()
 		{
-print("3.0");		reset_network_variables("GameNetworkManager.Disconnect");
+print("3.0");		reset_local_variables("GameNetworkManager.Disconnect");
 		}
-		public static void reset_network_variables(string s)
+		[HarmonyPatch("ResetSavedGameValues"), HarmonyPrefix]
+		private static void pre2(GameNetworkManager __instance)
+		{
+print("4.0");		c.chosen = false;
+			c.chosen_moon = false;
+			c.key = 0;
+			c.keys = "";
+			c.start_keys = "";
+			rm_t.typed_key = 0;
+			rm_pcb.stars = new string[] {"name", "ffffff", "description"};
+			rm_pcb.presets = new bool[] {false, false, false};
+			if (__instance.isHostingGame == true)
+			{
+print("4.1");			if (ES3.KeyExists("4902.Random_Moons-1", __instance.currentSaveFileName) == true) ES3.DeleteKey("4902.Random_Moons-1", __instance.currentSaveFileName);
+				if (ES3.KeyExists("4902.Random_Moons-2", __instance.currentSaveFileName) == true) ES3.DeleteKey("4902.Random_Moons-2", __instance.currentSaveFileName);
+				if (ES3.KeyExists("4902.Random_Moons-3", __instance.currentSaveFileName) == true) ES3.DeleteKey("4902.Random_Moons-3", __instance.currentSaveFileName);
+				if (ES3.KeyExists("4902.Random_Moons-4", __instance.currentSaveFileName) == true) ES3.DeleteKey("4902.Random_Moons-4", __instance.currentSaveFileName);
+				if (ES3.KeyExists("4902.Random_Moons-5", __instance.currentSaveFileName) == true) ES3.DeleteKey("4902.Random_Moons-5", __instance.currentSaveFileName);
+				if (ES3.KeyExists("4902.Random_Moons-6", __instance.currentSaveFileName) == true) ES3.DeleteKey("4902.Random_Moons-6", __instance.currentSaveFileName);
+			}
+		}
+		public static void reset_local_variables(string s)
 		{
 			c.chosen = false;
 			c.chosen_moon = false;
@@ -860,16 +908,16 @@ print("3.0");		reset_network_variables("GameNetworkManager.Disconnect");
 			c.key = 0;
 			c.keys = "";
 			c.start_keys = "";
-			t.typed_key = 0;
-			pcb.stars = new string[] {"name", "ffffff", "description"};
-			pcb.presets = new bool[] {false, false, false};
-			pcb.sync = false;
-			c.mls.LogInfo("reset network variables (" + s + ")");
+			rm_t.typed_key = 0;
+			rm_pcb.stars = new string[] {"name", "ffffff", "description"};
+			rm_pcb.presets = new bool[] {false, false, false};
+			rm_pcb.sync = false;
+			c.mls.LogInfo("reset local variables (" + s + ")");
 		}
 		private static void print(string _) { if (c.cfg_pri.Value == true) c.mls.LogInfo("GameNetworkManager:" + _); }
 	}
 	[HarmonyPatch(typeof(PlayerControllerB))]
-	internal class pcb
+	internal class rm_pcb
 	{
 		public static string[] stars = {"name", "ffffff", "description"}; //strings>strs>stars
 
@@ -884,9 +932,9 @@ print("3.0");		reset_network_variables("GameNetworkManager.Disconnect");
 		{
 print("1.0");		if (overwrite == true)
 			{
-print("1.1");			t.text3 = (c.cfg_cmm.Value == true ? " challenge " : " ");
-				t.text1 = "Route the autopilot to a random" + t.text3 + "moon.\n\nPlease CONFIRM or DENY.\n\n";
-				Object.FindObjectOfType<Terminal>().terminalNodes.allKeywords.First(_ => _.name == "Moons").specialKeywordResult.displayText = t.gold_key + "* Randomizer   //   Random" + t.text3 + "moons\n\n";
+print("1.1");			rm_t.text3 = (c.cfg_cmm.Value == true ? " challenge " : " ");
+				rm_t.text1 = "Route the autopilot to a random" + rm_t.text3 + "moon.\n\nPlease CONFIRM or DENY.\n\n";
+				Object.FindAnyObjectByType<Terminal>(FindObjectsInactive.Include).terminalNodes.allKeywords.First(_ => _.name == "Moons").specialKeywordResult.displayText = rm_t.gold_key + "* Randomizer   //   Random" + rm_t.text3 + "moons\n\n";
 				overwrite = false;
 			}
 			if (sync == false)
@@ -952,9 +1000,9 @@ print("3.5");							StartOfRound.Instance.screenLevelDescription.text = moons.cr
 								presets = new bool[] {false, true, true};
 							}
 						}
-						t.text3 = (s[1] == "true" ? " challenge " : " ");
-						t.text1 = "Route the autopilot to a random" + t.text3 + "moon.\n\nPlease CONFIRM or DENY.\n\n";
-						Object.FindObjectOfType<Terminal>().terminalNodes.allKeywords.First(_ => _.name == "Moons").specialKeywordResult.displayText = t.gold_key + "* Randomizer   //   Random" + t.text3 + "moons\n\n";
+						rm_t.text3 = (s[1] == "true" ? " challenge " : " ");
+						rm_t.text1 = "Route the autopilot to a random" + rm_t.text3 + "moon.\n\nPlease CONFIRM or DENY.\n\n";
+						Object.FindAnyObjectByType<Terminal>(FindObjectsInactive.Include).terminalNodes.allKeywords.First(_ => _.name == "Moons").specialKeywordResult.displayText = rm_t.gold_key + "* Randomizer   //   Random" + rm_t.text3 + "moons\n\n";
 						overwrite = true;
 					}
 					else
@@ -1003,7 +1051,7 @@ print("4.1");			try
 				{
 					if (misc == false)
 					{
-						k = new Shion().next48mm(1, UInt32.MaxValue - 111111111);
+						k = new Shion().next32mm(min: 1, max: UInt32.MaxValue - 111111111, unsigned: true);
 						level = new Shion(k + 11).next32mm(0, StartOfRound.Instance.levels.Length);
 					}
 					else
@@ -1027,8 +1075,8 @@ print("4.1");			try
 			if (k != 0 && misc == false) c.key = k;
 			if (display_key == true && GameNetworkManager.Instance.isHostingGame == true)
 			{
-				Terminal terminal = Object.FindObjectOfType<Terminal>();
-				gnm.k = c.key;
+				Terminal terminal = Object.FindAnyObjectByType<Terminal>(FindObjectsInactive.Include);
+				rm_gnm.k = c.key;
 				string name = GameNetworkManager.Instance.GetNameForWeekNumber();
 				string s = terminal.screenText.text.Replace("[name]", name);
 				if (c.cfg_key.Value == true)
@@ -1093,14 +1141,16 @@ print("4.1");			try
 		public int next32mm(int min, int max)
 		{
 			uint value = next32();
+			if (value == UInt32.MaxValue) value = value - 1;
 			double scale = ((double)(max - min)) / UInt32.MaxValue;
-			return (int)(min + (value * scale));
+			return (int)(min + (value * scale)); //[min, max)
 		}
-		public uint next48mm(uint min, uint max)
+		public uint next32mm(uint min, uint max, bool unsigned)
 		{
 			uint value = next32();
+			if (value == UInt32.MaxValue) value = value - 1;
 			double scale = ((double)(max - min)) / UInt32.MaxValue;
-			return (uint)(min + (value * scale));
+			return (uint)(min + (value * scale)); //[min, max)
 		}
 		public byte[] next8()
 		{
@@ -1118,8 +1168,9 @@ print("4.1");			try
 		}
 		public double next01()
 		{
-			UInt64 nextInt64 = xoshiro256ss(); //0 inclusive, 1 exclusive
-			return (double)nextInt64 / (double)(UInt64.MaxValue);
+			UInt64 nextInt64 = xoshiro256ss();
+			if (nextInt64 == UInt64.MaxValue) nextInt64 = nextInt64 - 1;
+			return (double)nextInt64 / (double)(UInt64.MaxValue); //[0, 1)
 		}
 
 		//misc
