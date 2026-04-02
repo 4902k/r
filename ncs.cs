@@ -140,7 +140,7 @@ namespace bunny
 				if (cdlist.Value.Contains("22") == true)
 				{
 					IL.BushWolfEnemy.Update += bushwolf_update;
-					IL.BushWolfEnemy.GetBiggestWeedPatch += bushwolf_big;
+					//IL.BushWolfEnemy.GetBiggestWeedPatch += bushwolf_big;
 				}
 				if (cdlist.Value.Contains("23") == true)
 				{
@@ -158,7 +158,7 @@ namespace bunny
 				if (cdlist.Value.Contains("31") == true) IL.SprayPaintItem.LateUpdate += spray_1;
 				if (cdlist.Value.Contains("32") == true) IL.SprayPaintItem.ItemActivate += spray_2;
 				if (cdlist.Value.Contains("33") == true) IL.FlashlightItem.SwitchFlashlight += flashlight;
-				if (cdlist.Value.Contains("34") == true) IL.GrabbableObject.ActivateItemClientRpc += item_used;
+				if (cdlist.Value.Contains("34") == true) IL.GrabbableObject.ActivateItemRpc += item_used;
 				if (cdlist.Value.Contains("35") == true) IL.MaskedPlayerEnemy.UseElevator += masked_elevator;
 				if (cdlist.Value.Contains("36") == true)
 				{
@@ -1577,7 +1577,7 @@ namespace bunny
 					for (int s = 0; s < 7; s = s + 1) l.Instrs[n + s].OpCode = OpCodes.Nop;
 					if (cd_23 == 0) continue;
 					c.Emit(OpCodes.Ldarg_1);
-					c.Emit(OpCodes.Ldloc_0);
+					c.Emit(OpCodes.Ldloc_2);
 					c.EmitDelegate<System.Action<Vector3, int>>((position, num) =>
 					{
 						if ((Time.frameCount - _23[0]) >= cd_23)
