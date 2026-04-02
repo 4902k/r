@@ -261,13 +261,15 @@ namespace shark
 				if (n < (l.Count - 4) && l[n + 4].ToString() == "callvirt virtual void GrabbableObject::EquipItem()")
 				{
 					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Ldarg_2);
 					yield return new CodeInstruction(OpCodes.Call, typeof(blahaj).GetMethod("hold_item"));
 				}
 				//gura.mls.LogInfo(l[n].ToString());
 			}
 		}
-		public static void hold_item(PlayerControllerB player)
+		public static void hold_item(PlayerControllerB player, GrabbableObject item_only_slot_item)
 		{
+			if (player.currentItemSlot == 50 || player.ItemSlots.Length < player.currentItemSlot || (player.ItemOnlySlot == item_only_slot_item && player.ItemOnlySlot)) return;
 			GrabbableObject _item = player.ItemSlots[player.currentItemSlot];
 			if (item[0] != null && _item != null && _item.itemProperties.name == "Cog1" && _item.GetComponentInChildren<ScanNodeProperties>() != null)
 			{
