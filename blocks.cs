@@ -148,12 +148,8 @@ namespace blocks
 				await wait_frames(1);
 				if (__instance.gameObject.GetComponent<blocks.temporary>() != null) return;
 				__instance.gameObject.AddComponent<blocks.temporary>();
-				if (first_item[0] == true)
-				{
-					Item r = StartOfRound.Instance.allItemsList.itemsList.First(_ => _.name == "MagnifyingGlass");
-					r.restingRotation = new Vector3(0f, 90f, -90f);
-					r.verticalOffset = 0.05f;
-				}
+				__instance.itemProperties.restingRotation = new Vector3(0f, 90f, -90f);
+				__instance.itemProperties.verticalOffset = 0.05f;
 				if (GameNetworkManager.Instance.disableSteam == false && seeds == "nil")
 				{
 					if (GameNetworkManager.Instance.isHostingGame == false)
@@ -1297,13 +1293,15 @@ namespace blocks
 				if (n < (l.Count - 4) && l[n + 4].ToString() == "callvirt virtual void GrabbableObject::EquipItem()")
 				{
 					yield return new CodeInstruction(OpCodes.Ldarg_0);
+					yield return new CodeInstruction(OpCodes.Ldarg_2);
 					yield return new CodeInstruction(OpCodes.Call, typeof(minecraft_scraps).GetMethod("hold_item"));
 				}
 				//yon.mls.LogInfo(l[n].ToString());
 			}
 		}
-		public static void hold_item(PlayerControllerB player)
+		public static void hold_item(PlayerControllerB player, GrabbableObject item_only_slot_item)
 		{
+			if (player.currentItemSlot == 50 || player.ItemSlots.Length < player.currentItemSlot || (player.ItemOnlySlot == item_only_slot_item && player.ItemOnlySlot)) return;
 			GrabbableObject _item = player.ItemSlots[player.currentItemSlot];
 			if (item[0] != null && _item != null && _item.itemProperties.name == "MagnifyingGlass" && _item.GetComponentInChildren<ScanNodeProperties>() != null)
 			{
@@ -1372,13 +1370,17 @@ namespace blocks
 				}
 			}
 		}
+		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPrefix]
+		private static void pre3()
+		{
+			disconnected = new bool[] {false, false};
+			reset_local_variables("StartOfRound.Awake");
+		}
 		[HarmonyPatch(typeof(StartOfRound), "Awake"), HarmonyPostfix]
 		private static void pst2()
 		{
 			if (GameNetworkManager.Instance.disableSteam == false)
 			{
-				disconnected = new bool[] {false, false};
-				synced_weights = new int[] {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 				if (GameNetworkManager.Instance.currentLobby.HasValue == true)
 				{
 					lobbyid = (GameNetworkManager.Instance.currentLobby.Value.Id % 1000000000);
@@ -1491,16 +1493,25 @@ namespace blocks
 			}
 		}
 		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPrefix]
-		private static void pre3()
+		private static void pre4()
 		{
 			disconnected[0] = true;
-			if (StartOfRound.Instance != null && NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
+		}
+		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
+		private static void pst4()
+		{
+			reset_local_variables("GameNetworkManager.Disconnect");
+		}
+		[HarmonyPatch(typeof(StartOfRound), "OnDisable"), HarmonyPrefix]
+		private static void pre5()
+		{
+			reset_local_variables("StartOfRound.OnDisable");
+			if (NetworkManager.Singleton != null && NetworkManager.Singleton.CustomMessagingManager != null)
 			{
 				try { NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Minecraft_Scraps-Host"); NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("4902.Minecraft_Scraps-Client"); } catch (System.Exception error) { yon.mls.LogError(error); }
 			}
 		}
-		[HarmonyPatch(typeof(GameNetworkManager), "Disconnect"), HarmonyPostfix]
-		private static void pst4()
+		private static void reset_local_variables(string s)
 		{
 			sync = false;
 			seeds = "nil";
@@ -1510,6 +1521,7 @@ namespace blocks
 			loaded_glass = new List<string>();
 			synced_weights = new int[] {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 			client_received = false;
+			yon.mls.LogInfo("reset local variables (" + s + ")");
 		}
 
 //		// saving/loading //
@@ -1630,6 +1642,17 @@ namespace blocks
 				}
 			}
 		}
+		[HarmonyPatch(typeof(GameNetworkManager), "ResetSavedGameValues"), HarmonyPrefix]
+		private static void pre6(GameNetworkManager __instance)
+		{
+			seeds = "nil";
+			saved_glass = "";
+			loaded_glass = new List<string>();
+			if (__instance.isHostingGame == true && ES3.KeyExists("4902.Minecraft_Scraps-1", __instance.currentSaveFileName) == true)
+			{
+				ES3.DeleteKey("4902.Minecraft_Scraps-1", __instance.currentSaveFileName);
+			}
+		}
 	}
 
 //	// unreadable mesh to readable mesh //
@@ -1701,8 +1724,16 @@ namespace blocks
 		public int next32mm(int min, int max)
 		{
 			uint value = next32();
+			if (value == UInt32.MaxValue) value = value - 1;
 			double scale = ((double)(max - min)) / UInt32.MaxValue;
-			return (int)(min + (value * scale));
+			return (int)(min + (value * scale)); //[min, max)
+		}
+		public uint next32mm(uint min, uint max, bool unsigned)
+		{
+			uint value = next32();
+			if (value == UInt32.MaxValue) value = value - 1;
+			double scale = ((double)(max - min)) / UInt32.MaxValue;
+			return (uint)(min + (value * scale)); //[min, max)
 		}
 		public byte[] next8()
 		{
@@ -1720,8 +1751,9 @@ namespace blocks
 		}
 		public double next01()
 		{
-			UInt64 nextInt64 = xoshiro256ss(); //0 inclusive, 1 exclusive
-			return (double)nextInt64 / (double)(UInt64.MaxValue);
+			UInt64 nextInt64 = xoshiro256ss();
+			if (nextInt64 == UInt64.MaxValue) nextInt64 = nextInt64 - 1;
+			return (double)nextInt64 / (double)(UInt64.MaxValue); //[0, 1)
 		}
 
 		//misc
